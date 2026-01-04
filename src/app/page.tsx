@@ -22,10 +22,12 @@ import { useAuth, type Role } from '@/lib/auth';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [role, setRole] = useState<Role>('candidate');
   const [username, setUsername] = useState('candidate@example.com');
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
@@ -68,9 +70,19 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 relative">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required defaultValue="password" />
+              <Input id="password" type={showPassword ? "text" : "password"} required defaultValue="password" />
+               <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-7 h-7 w-7"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <span className="sr-only">Toggle password visibility</span>
+                </Button>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
