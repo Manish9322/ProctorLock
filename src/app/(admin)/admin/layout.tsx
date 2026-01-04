@@ -16,7 +16,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, Users, FileText, Settings, School } from 'lucide-react';
+import { Home, Users, FileText, Settings, School, BarChart3 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ const navItems = [
   { href: '/admin/tests', icon: FileText, label: 'Tests' },
   { href: '/admin/candidates', icon: Users, label: 'Candidates' },
   { href: '/admin/colleges', icon: School, label: 'Colleges & Institutes' },
+  { href: '/admin/reports', icon: BarChart3, label: 'Reports' },
 ];
 
 function AdminSidebar() {
