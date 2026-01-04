@@ -40,6 +40,7 @@ type College = {
   name: string;
   type: 'University' | 'Organization' | 'Institute';
   registrations: number;
+  location: string;
 };
 
 const collegesData: College[] = registrationOptions.colleges;
@@ -66,6 +67,13 @@ const columns: DataTableColumnDef<College>[] = [
         accessorKey: 'type',
         header: {
             title: 'Type',
+            sortable: true,
+        },
+    },
+    {
+        accessorKey: 'location',
+        header: {
+            title: 'Location',
             sortable: true,
         },
     },
@@ -119,7 +127,7 @@ export default function CollegesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
-    const searchableColumns: (keyof College)[] = ['name', 'type'];
+    const searchableColumns: (keyof College)[] = ['name', 'type', 'location'];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
