@@ -23,12 +23,13 @@ export function DashboardHeader() {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
 
+  if (isAdminRoute) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-      {isAdminRoute ? (
-         <SidebarTrigger className="sm:hidden" />
-      ) : (
-         <Sheet>
+      <Sheet>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
                 <PanelLeft className="h-5 w-5" />
@@ -44,40 +45,14 @@ export function DashboardHeader() {
                   <Icons.Logo className="h-5 w-5 transition-all group-hover:scale-110" />
                   <span className="sr-only">ProctorLock</span>
                 </Link>
-                {navItems.map(item => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                      pathname.startsWith(item.href) && 'text-foreground'
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.label}
-                  </Link>
-                ))}
-                 <Link
-                    href="/admin/settings"
-                    className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                       pathname.startsWith('/admin/settings') && 'text-foreground'
-                    )}
-                  >
-                    <Settings className="h-5 w-5" />
-                    Settings
-                  </Link>
+                {/* This mobile nav is for non-admin routes, adjust if necessary */}
               </nav>
             </SheetContent>
           </Sheet>
-      )}
      
-      {!isAdminRoute && (
-         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-            <UserNav />
-        </div>
-      )}
-       {isAdminRoute && (
-         <h1 className="text-xl font-semibold">Admin Panel</h1>
-       )}
+      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+        <UserNav />
+      </div>
     </header>
   );
 }

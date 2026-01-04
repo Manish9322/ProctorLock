@@ -3,8 +3,6 @@ import { useAuth, type Role } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AdminSidebar } from '@/components/admin/admin-sidebar';
-import { DashboardHeader } from '@/components/dashboard/header';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,19 +13,11 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, Users, FileText, Settings, PanelLeft } from 'lucide-react';
+import { Home, Users, FileText, Settings } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 const navItems = [
   { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
@@ -147,7 +137,6 @@ export default function AdminLayout({
         </SidebarFooter>
       </Sidebar>
       <div className="flex flex-1 flex-col">
-        <DashboardHeader />
         <main className="flex-1 p-4 md:gap-8 md:p-8">
           {children}
         </main>
