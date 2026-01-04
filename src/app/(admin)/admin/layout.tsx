@@ -74,11 +74,9 @@ function AdminSidebar() {
         <SidebarFooter>
           <SidebarMenu>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild onClick={toggleSidebar}>
-                    <button>
-                        <SidebarTrigger />
-                        <span>Collapse</span>
-                    </button>
+                <SidebarMenuButton onClick={toggleSidebar}>
+                    <SidebarTrigger />
+                    <span>Collapse</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
