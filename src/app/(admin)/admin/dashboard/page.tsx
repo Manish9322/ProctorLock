@@ -1,20 +1,17 @@
 'use client';
-import { DashboardLayout } from '@/components/dashboard/layout';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Users, BookOpenCheck, MonitorPlay } from 'lucide-react';
+import { Users, BookOpenCheck, MonitorPlay, AlertTriangle } from 'lucide-react';
 
 export default function AdminDashboard() {
   return (
-    <DashboardLayout allowedRoles={['admin']}>
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -32,20 +29,20 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Examiners
+              Active Exams
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <MonitorPlay className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">82</div>
+            <div className="text-2xl font-bold">12</div>
             <p className="text-xs text-muted-foreground">
-              +12 from last month
+              Live right now
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Exams Created</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
             <BookOpenCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -55,17 +52,15 @@ export default function AdminDashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Proctoring Sessions
-            </CardTitle>
-            <MonitorPlay className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Flagged Sessions</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">
-              Live right now
+            <div className="text-2xl font-bold">3</div>
+             <p className="text-xs text-muted-foreground">
+              In the last 24 hours
             </p>
           </CardContent>
         </Card>
@@ -78,6 +73,6 @@ export default function AdminDashboard() {
             <p className="text-sm text-muted-foreground">No recent activity to display.</p>
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </div>
   );
 }

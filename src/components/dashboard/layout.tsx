@@ -17,21 +17,19 @@ export function DashboardLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    if (user === null && !isAuthenticated) {
-       // Let's give it a moment to get user from context
-      setTimeout(() => {
+    const timer = setTimeout(() => {
         if (!isAuthenticated) {
           router.push('/');
+        } else if (user && user.role) {
+          if (allowedRoles && !allowedRoles.includes(user.role)) {
+            router.push(`/${user.role}/dashboard`);
+          } else {
+            setIsAuthorized(true);
+          }
         }
-      }, 500);
-    } else if (user && user.role) {
-      if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // If role is not allowed, redirect to their default dashboard
-        router.push(`/${user.role}/dashboard`);
-      } else {
-        setIsAuthorized(true);
-      }
-    }
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [isAuthenticated, user, router, allowedRoles]);
 
   if (!isAuthorized) {
