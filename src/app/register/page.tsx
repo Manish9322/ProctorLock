@@ -214,7 +214,7 @@ export default function RegisterPage() {
                   name="govIdType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Government ID</FormLabel>
+                      <FormLabel>Government ID Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -243,7 +243,8 @@ export default function RegisterPage() {
                   control={form.control}
                   name="govIdNumber"
                   render={({ field }) => (
-                    <FormItem className="self-end">
+                    <FormItem>
+                      <FormLabel>ID Number</FormLabel>
                       <FormControl>
                         <Input placeholder="ID Number" {...field} />
                       </FormControl>
