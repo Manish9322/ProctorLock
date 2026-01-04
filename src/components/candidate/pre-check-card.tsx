@@ -168,8 +168,8 @@ export function PreCheckCard({ examId }: { examId: string }) {
                 </Alert>
             )}
         </div>
-        <div className="flex flex-col space-y-6">
-             <Alert>
+        <div className="flex flex-col space-y-4">
+             <Alert className="text-sm">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Instructions</AlertTitle>
                 <AlertDescription>
@@ -206,21 +206,21 @@ export function PreCheckCard({ examId }: { examId: string }) {
             </div>
 
             <div className={`p-4 rounded-md flex items-start gap-4 border ${consentGiven ? 'border-green-200 dark:border-green-800' : ''}`}>
-                    <CheckSquare className="h-6 w-6 mt-1"/>
+                    <CheckSquare className="h-6 w-6 mt-1 flex-shrink-0"/>
                     <div className="flex-1 space-y-2">
                         <h3 className="font-semibold">Consent for Proctoring</h3>
                         <p className="text-sm text-muted-foreground">
-                            I acknowledge and agree to be monitored via my webcam and microphone during this exam. I understand that my activities will be recorded for proctoring purposes.
+                            I agree to be monitored via webcam and microphone for proctoring purposes.
                         </p>
                          <div className="flex items-center space-x-2 pt-2">
                             <Checkbox id="consent" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
                             <Label htmlFor="consent" className="text-sm font-medium leading-none">I agree to the terms</Label>
                         </div>
                     </div>
-                    {consentGiven && <CheckCircle2 className="h-5 w-5 text-green-600"/>}
+                    {consentGiven && <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0"/>}
             </div>
             
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-2 pt-2 mt-auto">
                  {webcamStatus === 'pending' || micStatus === 'pending' ? (
                     <Button onClick={startChecks} disabled={isChecking}>
                         {isChecking ? 'Checking...' : 'Start System Check'}
