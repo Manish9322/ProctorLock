@@ -10,9 +10,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Form,
@@ -38,6 +38,8 @@ import { registrationOptions } from '@/lib/config-data';
 const registrationSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
+  phoneNumber: z.string().min(10, 'Please enter a valid phone number.'),
+  timezone: z.string().min(2, 'Timezone is required.'),
   role: z.string().min(1, 'Please select a role.'),
   organization: z.string().min(2, 'Organization name is required.'),
   govIdType: z.string().min(1, 'Please select an ID type.'),
@@ -56,6 +58,8 @@ export default function RegisterPage() {
     defaultValues: {
       fullName: '',
       email: '',
+      phoneNumber: '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       role: '',
       organization: '',
       govIdType: '',
@@ -121,6 +125,38 @@ export default function RegisterPage() {
                           placeholder="john.doe@example.com"
                           {...field}
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="(123) 456-7890"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="timezone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Timezone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. America/New_York" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
