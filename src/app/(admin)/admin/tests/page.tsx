@@ -28,7 +28,10 @@ export default function TestsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tests</h1>
+        <div>
+            <h1 className="text-2xl font-bold">Tests</h1>
+            <p className="text-muted-foreground">Create, manage, and view results for all your tests.</p>
+        </div>
         <Button>Create New Test</Button>
       </div>
       <Table>

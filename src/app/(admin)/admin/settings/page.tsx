@@ -15,7 +15,10 @@ import { Label } from '@/components/ui/label';
 export default function SettingsPage() {
   return (
     <div className="space-y-4">
-       <h1 className="text-2xl font-bold">Settings</h1>
+       <div>
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your administrator preferences.</p>
+       </div>
       <Card>
         <CardHeader>
           <CardTitle>Admin Preferences</CardTitle>

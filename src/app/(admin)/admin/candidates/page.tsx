@@ -44,7 +44,10 @@ const candidates = [
 export default function CandidatesPage() {
   return (
     <div className="space-y-4">
-       <h1 className="text-2xl font-bold">Candidates</h1>
+       <div>
+        <h1 className="text-2xl font-bold">Candidates</h1>
+        <p className="text-muted-foreground">View and manage all registered candidates.</p>
+       </div>
       <Table>
         <TableHeader>
           <TableRow>
