@@ -140,105 +140,106 @@ export function PreCheckCard({ examId }: { examId: string }) {
   const allChecksPassed = webcamStatus === 'success' && micStatus === 'success' && consentGiven;
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-6xl">
       <CardHeader>
         <CardTitle className="text-2xl">Pre-Test Verification</CardTitle>
         <CardDescription>
           Final checks before you can begin your exam.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Instructions</AlertTitle>
-            <AlertDescription>
-                Please start the system check and provide consent to proceed.
-            </AlertDescription>
-        </Alert>
-
-        <div className="flex items-center justify-center p-4 border rounded-md bg-muted aspect-video overflow-hidden">
-          {webcamStatus === 'pending' && <Camera className="h-16 w-16 text-muted-foreground"/>}
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`h-full w-full object-cover ${webcamStatus === 'success' ? 'block' : 'hidden'}`}
-          ></video>
-          {webcamStatus === 'error' && <Camera className="h-16 w-16 text-destructive"/>}
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-center border rounded-md bg-muted aspect-video overflow-hidden">
+                {webcamStatus === 'pending' && <Camera className="h-16 w-16 text-muted-foreground"/>}
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className={`h-full w-full object-cover ${webcamStatus === 'success' ? 'block' : 'hidden'}`}
+                ></video>
+                {webcamStatus === 'error' && <Camera className="h-16 w-16 text-destructive"/>}
+            </div>
+             {error && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
         </div>
-
-        {error && (
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+        <div className="flex flex-col space-y-6">
+             <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Instructions</AlertTitle>
+                <AlertDescription>
+                    Please start the system check and provide consent to proceed.
+                </AlertDescription>
             </Alert>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className={`p-4 rounded-md flex items-center gap-4 border ${webcamStatus === 'success' ? 'border-green-200 dark:border-green-800' : ''}`}>
-                <Camera className="h-6 w-6"/>
-                <div>
-                    <h3 className="font-semibold">Webcam</h3>
-                    <p className="text-sm text-muted-foreground">
-                        {webcamStatus === 'pending' && 'Waiting...'}
-                        {webcamStatus === 'success' && 'Ready'}
-                        {webcamStatus === 'error' && 'Not detected'}
-                    </p>
+            <div className="grid grid-cols-1 gap-4">
+                <div className={`p-4 rounded-md flex items-center gap-4 border ${webcamStatus === 'success' ? 'border-green-200 dark:border-green-800' : ''}`}>
+                    <Camera className="h-6 w-6"/>
+                    <div>
+                        <h3 className="font-semibold">Webcam</h3>
+                        <p className="text-sm text-muted-foreground">
+                            {webcamStatus === 'pending' && 'Waiting...'}
+                            {webcamStatus === 'success' && 'Ready'}
+                            {webcamStatus === 'error' && 'Not detected'}
+                        </p>
+                    </div>
+                    {webcamStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
+                    {webcamStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
                 </div>
-                {webcamStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
-                {webcamStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
+                 <div className={`p-4 rounded-md flex items-center gap-4 border ${micStatus === 'success' ? 'border-green-200 dark:border-green-800' : ''}`}>
+                    <Mic className="h-6 w-6"/>
+                    <div>
+                        <h3 className="font-semibold">Microphone</h3>
+                        <p className="text-sm text-muted-foreground">
+                            {micStatus === 'pending' && 'Waiting...'}
+                            {micStatus === 'success' && 'Ready'}
+                            {micStatus === 'error' && 'Not detected'}
+                        </p>
+                    </div>
+                    {micStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
+                    {micStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
+                </div>
             </div>
-             <div className={`p-4 rounded-md flex items-center gap-4 border ${micStatus === 'success' ? 'border-green-200 dark:border-green-800' : ''}`}>
-                <Mic className="h-6 w-6"/>
-                <div>
-                    <h3 className="font-semibold">Microphone</h3>
-                    <p className="text-sm text-muted-foreground">
-                        {micStatus === 'pending' && 'Waiting...'}
-                        {micStatus === 'success' && 'Ready'}
-                        {micStatus === 'error' && 'Not detected'}
-                    </p>
-                </div>
-                {micStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
-                {micStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
+
+            <div className={`p-4 rounded-md flex items-start gap-4 border ${consentGiven ? 'border-green-200 dark:border-green-800' : ''}`}>
+                    <CheckSquare className="h-6 w-6 mt-1"/>
+                    <div className="flex-1 space-y-2">
+                        <h3 className="font-semibold">Consent for Proctoring</h3>
+                        <p className="text-sm text-muted-foreground">
+                            I acknowledge and agree to be monitored via my webcam and microphone during this exam. I understand that my activities will be recorded for proctoring purposes.
+                        </p>
+                         <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox id="consent" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
+                            <Label htmlFor="consent" className="text-sm font-medium leading-none">I agree to the terms</Label>
+                        </div>
+                    </div>
+                    {consentGiven && <CheckCircle2 className="h-5 w-5 text-green-600"/>}
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+                 {webcamStatus === 'pending' || micStatus === 'pending' ? (
+                    <Button onClick={startChecks} disabled={isChecking}>
+                        {isChecking ? 'Checking...' : 'Start System Check'}
+                    </Button>
+                ) : null}
+                {webcamStatus === 'error' || micStatus === 'error' ? (
+                    <Button onClick={startChecks} disabled={isChecking}>
+                        {isChecking ? 'Checking...' : 'Retry Checks'}
+                    </Button>
+                ) : null}
+                <Button
+                onClick={handleProceed}
+                disabled={!allChecksPassed}
+                >
+                Proceed to Exam
+                </Button>
             </div>
         </div>
-
-         <div className={`p-4 rounded-md flex items-start gap-4 border ${consentGiven ? 'border-green-200 dark:border-green-800' : ''}`}>
-                <CheckSquare className="h-6 w-6"/>
-                <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold">Consent for Proctoring</h3>
-                    <p className="text-sm text-muted-foreground">
-                        I acknowledge and agree to be monitored via my webcam and microphone during this exam. I understand that my activities will be recorded for proctoring purposes.
-                    </p>
-                     <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox id="consent" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
-                        <Label htmlFor="consent" className="text-sm font-medium leading-none">I agree to the terms</Label>
-                    </div>
-                </div>
-                {consentGiven && <CheckCircle2 className="h-5 w-5 text-green-600"/>}
-            </div>
-
       </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-        {webcamStatus === 'pending' || micStatus === 'pending' ? (
-             <Button onClick={startChecks} disabled={isChecking}>
-                {isChecking ? 'Checking...' : 'Start System Check'}
-             </Button>
-        ) : null}
-        {webcamStatus === 'error' || micStatus === 'error' ? (
-             <Button onClick={startChecks} disabled={isChecking}>
-                {isChecking ? 'Checking...' : 'Retry Checks'}
-             </Button>
-        ) : null}
-        <Button
-          onClick={handleProceed}
-          disabled={!allChecksPassed}
-        >
-          Proceed to Exam
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
