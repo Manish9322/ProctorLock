@@ -24,16 +24,21 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    MoreHorizontal,
     Search,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type Candidate = {
   id: string;
   name: string;
   examId: string;
   status: 'Finished' | 'Flagged' | 'In Progress' | 'Not Started';
+  college: string;
+  role: string;
+  phoneNumber: string;
 };
 
 const candidatesData: Candidate[] = [
@@ -42,41 +47,56 @@ const candidatesData: Candidate[] = [
     name: 'Alice Johnson',
     examId: 'CS101-FINAL',
     status: 'Finished',
+    college: 'Stanford University',
+    role: 'Student',
+    phoneNumber: '123-456-7890',
   },
   {
     id: 'user2',
     name: 'Bob Williams',
     examId: 'MA203-MIDTERM',
     status: 'Flagged',
+    college: 'MIT',
+    role: 'Student',
+    phoneNumber: '234-567-8901',
   },
   {
     id: 'user3',
     name: 'Charlie Brown',
     examId: 'PHY201-QUIZ3',
     status: 'In Progress',
+    college: 'Harvard University',
+    role: 'Professional',
+    phoneNumber: '345-678-9012',
   },
   {
     id: 'user4',
     name: 'Diana Miller',
     examId: 'CS101-FINAL',
     status: 'Finished',
+    college: 'UC Berkeley',
+    role: 'Student',
+    phoneNumber: '456-789-0123',
   },
   {
     id: 'user5',
     name: 'Eve Davis',
     examId: 'BIO-101',
     status: 'Not Started',
+    college: 'Yale University',
+    role: 'Student',
+    phoneNumber: '567-890-1234',
   },
-  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished' },
-  { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress' },
-  { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged' },
-  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started' },
-  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished' },
-  { id: 'user11', name: 'Kate Hill', examId: 'MA203-MIDTERM', status: 'In Progress' },
-  { id: 'user12', name: 'Liam Hall', examId: 'PHY201-QUIZ3', status: 'Finished' },
-  { id: 'user13', name: 'Mia Adams', examId: 'BIO-101', status: 'Not Started' },
-  { id: 'user14', name: 'Noah Baker', examId: 'CS101-FINAL', status: 'Flagged' },
-  { id: 'user15', name: 'Olivia Clark', examId: 'MA203-MIDTERM', status: 'In Progress' },
+  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished', college: 'Princeton University', role: 'Professional', phoneNumber: '678-901-2345' },
+  { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Columbia University', role: 'Student', phoneNumber: '789-012-3456' },
+  { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged', college: 'University of Chicago', role: 'Student', phoneNumber: '890-123-4567' },
+  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started', college: 'Duke University', role: 'Professional', phoneNumber: '901-234-5678' },
+  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished', college: 'Northwestern University', role: 'Student', phoneNumber: '012-345-6789' },
+  { id: 'user11', name: 'Kate Hill', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Johns Hopkins University', role: 'Student', phoneNumber: '111-222-3333' },
+  { id: 'user12', name: 'Liam Hall', examId: 'PHY201-QUIZ3', status: 'Finished', college: 'University of Pennsylvania', role: 'Professional', phoneNumber: '444-555-6666' },
+  { id: 'user13', name: 'Mia Adams', examId: 'BIO-101', status: 'Not Started', college: 'Caltech', role: 'Student', phoneNumber: '777-888-9999' },
+  { id: 'user14', name: 'Noah Baker', examId: 'CS101-FINAL', status: 'Flagged', college: 'Cornell University', role: 'Student', phoneNumber: '121-314-151' },
+  { id: 'user15', name: 'Olivia Clark', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Brown University', role: 'Professional', phoneNumber: '617-181-920' },
 ];
 
 interface DataTableColumnDef<TData> {
@@ -96,6 +116,27 @@ const columns: DataTableColumnDef<Candidate>[] = [
             sortable: true,
         },
         cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    },
+    {
+        accessorKey: 'college',
+        header: {
+            title: 'College/Institute',
+            sortable: true,
+        },
+    },
+     {
+        accessorKey: 'role',
+        header: {
+            title: 'Role',
+            sortable: true,
+        },
+    },
+     {
+        accessorKey: 'phoneNumber',
+        header: {
+            title: 'Phone Number',
+            sortable: false,
+        },
     },
     {
         accessorKey: 'examId',
@@ -129,6 +170,32 @@ const columns: DataTableColumnDef<Candidate>[] = [
             );
         },
     },
+    {
+        accessorKey: 'actions',
+        header: {
+            title: 'Actions',
+        },
+        cell: () => (
+            <div className="text-right">
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Toggle menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem>Result</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">
+                    Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        ),
+    },
 ];
 
 export default function CandidatesPage() {
@@ -148,7 +215,7 @@ export default function CandidatesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
-    const searchableColumns: (keyof Candidate)[] = ['name', 'examId'];
+    const searchableColumns: (keyof Candidate)[] = ['name', 'examId', 'college', 'role'];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
@@ -198,8 +265,9 @@ export default function CandidatesPage() {
             const term = options.searchTerm.toLowerCase();
             filteredCandidates = candidatesData.filter(
                 (candidate) =>
-                candidate.name.toLowerCase().includes(term) ||
-                candidate.examId.toLowerCase().includes(term)
+                searchableColumns.some(key =>
+                    String(candidate[key]).toLowerCase().includes(term)
+                )
             );
         }
         
