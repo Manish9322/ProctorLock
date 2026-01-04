@@ -33,6 +33,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { registrationOptions } from '@/lib/config-data';
 
 type College = {
   id: string;
@@ -41,18 +42,7 @@ type College = {
   registrations: number;
 };
 
-const collegesData: College[] = [
-  { id: 'col1', name: 'Stanford University', type: 'University', registrations: 125 },
-  { id: 'col2', name: 'MIT', type: 'University', registrations: 98 },
-  { id: 'col3', name: 'Harvard University', type: 'University', registrations: 110 },
-  { id: 'col4', name: 'UC Berkeley', type: 'University', registrations: 210 },
-  { id: 'col5', name: 'Acme Corporation', type: 'Organization', registrations: 45 },
-  { id: 'col6', name: 'Yale University', type: 'University', registrations: 80 },
-  { id: 'col7', name: 'Princeton University', type: 'University', registrations: 75 },
-  { id: 'col8', name: 'Innovate Inc.', type: 'Organization', registrations: 32 },
-  { id: 'col9', name: 'Columbia University', type: 'University', registrations: 150 },
-  { id: 'col10', name: 'Tech Solutions LLC', type: 'Organization', registrations: 60 },
-];
+const collegesData: College[] = registrationOptions.colleges;
 
 interface DataTableColumnDef<TData> {
     accessorKey: keyof TData | 'actions';

@@ -26,7 +26,7 @@ const navItems = [
   { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/admin/tests', icon: FileText, label: 'Tests' },
   { href: '/admin/candidates', icon: Users, label: 'Candidates' },
-  { href: '/admin/colleges', icon: School, label: 'Colleges' },
+  { href: '/admin/colleges', icon: School, label: 'Colleges & Institutes' },
 ];
 
 function AdminSidebar() {
