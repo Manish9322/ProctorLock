@@ -11,6 +11,7 @@ import { Button } from '../ui/button';
 import { Home, Users, FileText, Settings, PanelLeft } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 const navItems = [
   { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
@@ -20,9 +21,14 @@ const navItems = [
 
 export function DashboardHeader() {
   const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-       <Sheet>
+      {isAdminRoute ? (
+         <SidebarTrigger className="sm:hidden" />
+      ) : (
+         <Sheet>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
                 <PanelLeft className="h-5 w-5" />
@@ -62,9 +68,16 @@ export function DashboardHeader() {
               </nav>
             </SheetContent>
           </Sheet>
-      <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
-        <UserNav />
-      </div>
+      )}
+     
+      {!isAdminRoute && (
+         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4 justify-end">
+            <UserNav />
+        </div>
+      )}
+       {isAdminRoute && (
+         <h1 className="text-xl font-semibold">Admin Panel</h1>
+       )}
     </header>
   );
 }

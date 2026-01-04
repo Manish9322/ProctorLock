@@ -5,6 +5,35 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarTrigger,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+import Link from 'next/link';
+import { Home, Users, FileText, Settings, PanelLeft } from 'lucide-react';
+import { Icons } from '@/components/icons';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+const navItems = [
+  { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
+  { href: '/admin/tests', icon: FileText, label: 'Tests' },
+  { href: '/admin/candidates', icon: Users, label: 'Candidates' },
+];
 
 export default function AdminLayout({
   children,
@@ -13,6 +42,7 @@ export default function AdminLayout({
 }) {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const allowedRoles: Role[] = ['admin'];
 
@@ -51,14 +81,77 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <AdminSidebar />
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <SidebarMenuButton
+            asChild
+            className="group-data-[collapsible=icon]:hidden"
+          >
+            <Link href="/admin/dashboard" className="flex items-center gap-2">
+              <Icons.Logo className="h-6 w-6" />
+              <span className="font-semibold">ProctorLock</span>
+            </Link>
+          </SidebarMenuButton>
+          <SidebarMenuButton
+            asChild
+            className="hidden group-data-[collapsible=icon]:flex"
+            tooltip="ProctorLock"
+          >
+             <Link href="/admin/dashboard" className="flex items-center gap-2">
+              <Icons.Logo className="h-6 w-6" />
+            </Link>
+          </SidebarMenuButton>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <button>
+                        <SidebarTrigger />
+                        <span>Collapse</span>
+                    </button>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/admin/settings')}
+                tooltip="Settings"
+              >
+                <Link href="/admin/settings">
+                  <Settings />
+                  <span>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <div className="flex flex-1 flex-col">
         <DashboardHeader />
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <main className="flex-1 p-4 md:gap-8 md:p-8">
           {children}
         </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
