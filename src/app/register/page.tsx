@@ -33,11 +33,12 @@ import {
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { registrationOptions } from '@/lib/config-data';
 
 const registrationSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
-  role: z.enum(['student', 'professional']),
+  role: z.string().min(1, 'Please select a role.'),
   organization: z.string().min(2, 'Organization name is required.'),
   govIdType: z.string().min(1, 'Please select an ID type.'),
   govIdNumber: z.string().min(4, 'ID number must be at least 4 characters.'),
@@ -55,6 +56,7 @@ export default function RegisterPage() {
     defaultValues: {
       fullName: '',
       email: '',
+      role: '',
       organization: '',
       govIdType: '',
       govIdNumber: '',
@@ -93,7 +95,7 @@ export default function RegisterPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="fullName"
@@ -125,81 +127,95 @@ export default function RegisterPage() {
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select
+                      <FormLabel>Role</FormLabel>
+                      <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
-                        >
+                      >
                         <FormControl>
-                            <SelectTrigger>
+                          <SelectTrigger>
                             <SelectValue placeholder="Select your role" />
-                            </SelectTrigger>
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="student">Student</SelectItem>
-                            <SelectItem value="professional">Professional</SelectItem>
+                          {registrationOptions.roles.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
-                        </Select>
-                        <FormMessage />
+                      </Select>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="organization"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="organization"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Organization / Institute</FormLabel>
-                        <FormControl>
-                        <Input placeholder="University of Example" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      <FormLabel>Organization / Institute</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="University of Example"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
-               </div>
-               <div className="grid grid-cols-2 gap-4">
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
-                    control={form.control}
-                    name="govIdType"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="govIdType"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Government ID</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Government ID</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
-                            <SelectTrigger>
+                          <SelectTrigger>
                             <SelectValue placeholder="ID Type" />
-                            </SelectTrigger>
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="passport">Passport</SelectItem>
-                            <SelectItem value="drivers_license">Driver's License</SelectItem>
-                            <SelectItem value="national_id">National ID</SelectItem>
+                          {registrationOptions.govIdTypes.map((idType) => (
+                            <SelectItem
+                              key={idType.value}
+                              value={idType.value}
+                            >
+                              {idType.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
-                        </Select>
-                        <FormMessage />
+                      </Select>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
                 <FormField
-                    control={form.control}
-                    name="govIdNumber"
-                    render={({ field }) => (
+                  control={form.control}
+                  name="govIdNumber"
+                  render={({ field }) => (
                     <FormItem className="self-end">
-                         <FormControl>
-                            <Input placeholder="ID Number" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      <FormControl>
+                        <Input placeholder="ID Number" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                    )}
+                  )}
                 />
-               </div>
+              </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Registering...' : 'Register'}
@@ -210,7 +226,10 @@ export default function RegisterPage() {
         <CardFooter className="justify-center text-sm">
           <p>
             Already have an account?{' '}
-            <Link href="/" className="font-medium text-primary hover:underline">
+            <Link
+              href="/"
+              className="font-medium text-primary hover:underline"
+            >
               Log in
             </Link>
           </p>
