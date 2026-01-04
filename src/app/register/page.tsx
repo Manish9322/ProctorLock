@@ -53,7 +53,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showOtherOrgInput, setShowOtherOrgInput] = useState(false);
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -68,19 +67,6 @@ export default function RegisterPage() {
       govIdNumber: '',
     },
   });
-
-  const organizationValue = form.watch('organization');
-
-  // Handle combobox change
-  const handleOrganizationChange = (value: string) => {
-    form.setValue('organization', value);
-    if (value.toLowerCase() === 'other') {
-      setShowOtherOrgInput(true);
-      form.setValue('organization', ''); // Clear the value to allow custom input
-    } else {
-      setShowOtherOrgInput(false);
-    }
-  };
 
   async function onSubmit(data: RegistrationFormValues) {
     setIsLoading(true);
@@ -100,7 +86,6 @@ export default function RegisterPage() {
 
   const collegeOptions = [
     ...registrationOptions.colleges.map((c) => ({ label: c.name, value: c.name })),
-    { label: 'Other', value: 'other' },
   ];
 
   return (
@@ -217,23 +202,14 @@ export default function RegisterPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Organization / Institute</FormLabel>
-                       {!showOtherOrgInput ? (
-                         <Combobox
-                            options={collegeOptions}
-                            value={field.value}
-                            onChange={handleOrganizationChange}
-                            placeholder="Select or search..."
-                            searchPlaceholder="Search colleges..."
-                            notFoundMessage="No college found."
-                          />
-                       ) : (
-                          <FormControl>
-                            <Input
-                              placeholder="Please specify your organization"
-                              {...field}
-                            />
-                          </FormControl>
-                       )}
+                        <Combobox
+                          options={collegeOptions}
+                          value={field.value}
+                          onChange={(value) => form.setValue('organization', value)}
+                          placeholder="Select or search..."
+                          searchPlaceholder="Search colleges..."
+                          notFoundMessage="No college found."
+                        />
                       <FormMessage />
                     </FormItem>
                   )}
