@@ -26,10 +26,15 @@ import {
     ChevronsRight,
     MoreHorizontal,
     Search,
+    Users,
+    CheckCircle,
+    AlertTriangle,
+    Clock,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Candidate = {
   id: string;
@@ -242,6 +247,14 @@ export default function CandidatesPage() {
         return null;
     }, [sortParam]);
 
+    const stats = React.useMemo(() => {
+        const total = candidatesData.length;
+        const finished = candidatesData.filter(c => c.status === 'Finished').length;
+        const flagged = candidatesData.filter(c => c.status === 'Flagged').length;
+        const inProgress = candidatesData.filter(c => c.status === 'In Progress').length;
+        return { total, finished, flagged, inProgress };
+    }, []);
+
     // Debounce search term
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -328,6 +341,46 @@ export default function CandidatesPage() {
                     View and manage all registered candidates.
                 </p>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.finished}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Flagged</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.flagged}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.inProgress}</div>
+                </CardContent>
+                </Card>
+            </div>
+
             <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4">
                     <div className="relative">
