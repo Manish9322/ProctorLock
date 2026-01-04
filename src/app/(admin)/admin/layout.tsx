@@ -16,7 +16,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, Users, FileText, Settings, PanelLeft } from 'lucide-react';
+import { Home, Users, FileText, Settings } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,9 @@ function AdminSidebar() {
           <SidebarMenu>
              <SidebarMenuItem>
                 <SidebarMenuButton onClick={toggleSidebar}>
-                    <SidebarTrigger />
+                    <SidebarTrigger asChild>
+                        <span />
+                    </SidebarTrigger>
                     <span>Collapse</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
