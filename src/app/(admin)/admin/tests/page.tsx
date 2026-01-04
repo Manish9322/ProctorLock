@@ -104,7 +104,8 @@ const columns: DataTableColumnDef<Test>[] = [
     },
   },
   {
-    id: 'actions',
+    accessorKey: 'actions',
+    header: { title: 'Actions' },
     cell: () => (
       <div className="text-right">
         <DropdownMenu>
@@ -125,7 +126,6 @@ const columns: DataTableColumnDef<Test>[] = [
         </DropdownMenu>
       </div>
     ),
-    header: { title: 'Actions' },
   },
 ];
 
@@ -398,3 +398,5 @@ export default function TestsPage() {
         </div>
     );
 }
+
+    
