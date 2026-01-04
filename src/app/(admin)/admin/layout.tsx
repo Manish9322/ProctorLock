@@ -76,7 +76,7 @@ function AdminSidebar() {
              <SidebarMenuItem>
                 <SidebarMenuButton onClick={toggleSidebar}>
                     <SidebarTrigger asChild>
-                      <></>
+                      <span className="sr-only">Toggle Sidebar</span>
                     </SidebarTrigger>
                     <span>Collapse</span>
                 </SidebarMenuButton>
