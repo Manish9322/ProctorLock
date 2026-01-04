@@ -23,6 +23,7 @@ import { Icons } from '@/components/icons';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [role, setRole] = useState<Role>('candidate');
@@ -98,10 +99,16 @@ export default function LoginPage() {
               </Select>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full">
               Sign in
             </Button>
+            <p className="text-sm text-center text-muted-foreground">
+              Don't have an account?{' '}
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                Register
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
