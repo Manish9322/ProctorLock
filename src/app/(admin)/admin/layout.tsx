@@ -16,11 +16,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, Users, FileText, Settings, School, BarChart3 } from 'lucide-react';
+import { Home, Users, FileText, Settings, School, BarChart3, LogOut } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LogoutConfirmationDialog } from '@/components/logout-confirmation-dialog';
 
 const navItems = [
   { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
@@ -30,7 +31,7 @@ const navItems = [
   { href: '/admin/reports', icon: BarChart3, label: 'Reports' },
 ];
 
-function AdminSidebar() {
+function AdminSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
     const pathname = usePathname();
     const { toggleSidebar } = useSidebar();
     return (
@@ -93,6 +94,12 @@ function AdminSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={onLogoutClick} tooltip="Log Out">
+                  <LogOut />
+                  <span>Log Out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem className="mt-4">
                   <div className="flex items-center justify-center group-data-[collapsible=icon]:hidden">
                       <ThemeToggle />
@@ -115,6 +122,7 @@ export default function AdminLayout({
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const allowedRoles: Role[] = ['admin'];
 
   useEffect(() => {
@@ -147,12 +155,16 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-        <AdminSidebar />
+        <AdminSidebar onLogoutClick={() => setIsLogoutDialogOpen(true)} />
         <div className="flex flex-1 flex-col">
             <main className="flex-1 p-4 md:gap-8 md:p-8">
             {children}
             </main>
         </div>
+        <LogoutConfirmationDialog
+            open={isLogoutDialogOpen}
+            onOpenChange={setIsLogoutDialogOpen}
+        />
     </SidebarProvider>
   );
 }

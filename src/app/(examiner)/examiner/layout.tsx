@@ -16,10 +16,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, User, Video, Settings } from 'lucide-react';
+import { Home, User, Video, Settings, LogOut } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LogoutConfirmationDialog } from '@/components/logout-confirmation-dialog';
+
 
 const navItems = [
   { href: '/examiner/dashboard', icon: Home, label: 'Dashboard' },
@@ -27,7 +29,7 @@ const navItems = [
   { href: '/examiner/candidates', icon: User, label: 'Candidates' },
 ];
 
-function ExaminerSidebar() {
+function ExaminerSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
     const pathname = usePathname();
     const { toggleSidebar } = useSidebar();
     return (
@@ -90,6 +92,12 @@ function ExaminerSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={onLogoutClick} tooltip="Log Out">
+                  <LogOut />
+                  <span>Log Out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem className="mt-4">
                   <div className="flex items-center justify-center group-data-[collapsible=icon]:hidden">
                       <ThemeToggle />
@@ -112,6 +120,7 @@ export default function ExaminerLayout({
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const allowedRoles: Role[] = ['examiner'];
 
   useEffect(() => {
@@ -144,12 +153,16 @@ export default function ExaminerLayout({
 
   return (
     <SidebarProvider>
-        <ExaminerSidebar />
+        <ExaminerSidebar onLogoutClick={() => setIsLogoutDialogOpen(true)} />
         <div className="flex flex-1 flex-col">
             <main className="flex-1 p-4 md:gap-8 md:p-8">
             {children}
             </main>
         </div>
+         <LogoutConfirmationDialog
+            open={isLogoutDialogOpen}
+            onOpenChange={setIsLogoutDialogOpen}
+        />
     </SidebarProvider>
   );
 }
