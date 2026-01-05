@@ -15,6 +15,7 @@ import { CheckCircle2, XCircle, Camera, Mic, AlertTriangle, Signal, CheckSquare 
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 type SessionMetadata = {
     sessionId: string;
