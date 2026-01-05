@@ -27,6 +27,9 @@ import {
   PlusCircle,
   Trash2,
   Edit,
+  Video,
+  MousePointer,
+  CopySlash,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -61,6 +64,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { RadioGroup } from '../ui/radio-group';
+import { Switch } from '../ui/switch';
 
 const steps = [
   { id: 'details', name: 'Test Details', icon: FileText },
@@ -100,7 +104,7 @@ export function CreateTestForm() {
       case 'questions':
         return <TestQuestionsStep />;
       case 'rules':
-        return <p>Rules and proctoring settings will go here.</p>;
+        return <TestRulesStep />;
       case 'review':
         return <p>Review and publish will go here.</p>;
       default:
@@ -520,6 +524,116 @@ function TestQuestionsStep() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+function TestRulesStep() {
+  return (
+     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Shield className="h-5 w-5" /> Session Control</CardTitle>
+          <CardDescription>Rules that control the candidate's environment during the exam.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-md border p-4">
+            <div>
+              <Label htmlFor="fullscreen-mode" className="font-semibold">Mandatory Fullscreen</Label>
+              <p className="text-xs text-muted-foreground">Force candidates to stay in fullscreen mode throughout the exam.</p>
+            </div>
+            <Switch id="fullscreen-mode" defaultChecked />
+          </div>
+          <div className="space-y-2 rounded-md border p-4">
+            <Label className="font-semibold">Focus & Tab Switch Handling</Label>
+            <p className="text-xs text-muted-foreground">Define the action to take if a candidate switches tabs or loses focus.</p>
+            <Select defaultValue="warn_terminate">
+              <SelectTrigger>
+                <SelectValue placeholder="Select an action" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="warn">Issue a warning only</SelectItem>
+                <SelectItem value="warn_terminate">Warn, then terminate after 3 violations</SelectItem>
+                <SelectItem value="terminate">Terminate session immediately</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Video className="h-5 w-5" /> Monitoring</CardTitle>
+          <CardDescription>Settings related to proctoring and activity monitoring.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-md border p-4">
+            <div>
+              <Label htmlFor="webcam-required" className="font-semibold">Require Webcam</Label>
+              <p className="text-xs text-muted-foreground">Candidates must have a functional webcam to start the exam.</p>
+            </div>
+            <Switch id="webcam-required" defaultChecked/>
+          </div>
+          <div className="flex items-center justify-between rounded-md border p-4">
+            <div>
+              <Label htmlFor="mic-required" className="font-semibold">Require Microphone</Label>
+              <p className="text-xs text-muted-foreground">Candidates must have a functional microphone to start the exam.</p>
+            </div>
+            <Switch id="mic-required" defaultChecked />
+          </div>
+           <div className="space-y-2 rounded-md border p-4">
+            <Label className="font-semibold">Webcam Snapshot Interval</Label>
+            <p className="text-xs text-muted-foreground">How often to capture webcam snapshots for review.</p>
+            <Select defaultValue="30s">
+              <SelectTrigger>
+                <SelectValue placeholder="Select an interval" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15s">Every 15 seconds</SelectItem>
+                <SelectItem value="30s">Every 30 seconds</SelectItem>
+                <SelectItem value="1m">Every 1 minute</SelectItem>
+                <SelectItem value="5m">Every 5 minutes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+       <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><CopySlash className="h-5 w-5" /> Content Security</CardTitle>
+          <CardDescription>Prevent candidates from using unauthorized aids or copying content.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+           <div className="flex items-center space-x-2 rounded-md border p-4">
+            <Checkbox id="disable-copy-paste" />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="disable-copy-paste"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Disable Copy & Paste
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Block clipboard actions during the exam.
+              </p>
+            </div>
+          </div>
+           <div className="flex items-center space-x-2 rounded-md border p-4">
+            <Checkbox id="disable-right-click" />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="disable-right-click"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Disable Right-Click
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Prevent access to the browser's context menu.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
