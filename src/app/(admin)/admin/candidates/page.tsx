@@ -223,7 +223,7 @@ export default function CandidatesPage() {
     const searchParams = useSearchParams();
 
     // Modal state
-    const [modalState, setModalState: any] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
+    const [modalState, setModalState] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
 
     // Search params
     const page = searchParams.get('page') ?? '1';
