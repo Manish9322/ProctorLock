@@ -181,8 +181,8 @@ const ResultModal = ({ candidate, open, onOpenChange }: { candidate: Candidate |
     if (!candidate) return null;
 
     const getScoreColor = (score: number) => {
-        if (score &lt; 60) return "text-destructive";
-        if (score &lt; 80) return "text-amber-500";
+        if (score < 60) return "text-destructive";
+        if (score < 80) return "text-amber-500";
         return "text-green-500";
     }
 
@@ -254,7 +254,7 @@ export default function CandidatesPage() {
                 title: 'Name',
                 sortable: true,
             },
-            cell: ({ row }) => &lt;div className="font-medium">{row.getValue('name')}&lt;/div>,
+            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
         },
         {
             accessorKey: 'college',
@@ -293,7 +293,7 @@ export default function CandidatesPage() {
             cell: ({ row }) => {
                 const status = row.getValue('status') as Candidate['status'];
                 return (
-                    &lt;Badge
+                    <Badge
                         variant={
                             status === 'Flagged'
                             ? 'destructive'
@@ -305,7 +305,7 @@ export default function CandidatesPage() {
                         }
                         >
                         {status}
-                    &lt;/Badge>
+                    </Badge>
                 );
             },
         },
@@ -315,29 +315,29 @@ export default function CandidatesPage() {
                 title: 'Actions',
             },
             cell: ({ row }) => (
-                &lt;div className="text-right">
-                    &lt;DropdownMenu>
-                    &lt;DropdownMenuTrigger asChild>
-                        &lt;Button aria-haspopup="true" size="icon" variant="ghost">
-                        &lt;MoreHorizontal className="h-4 w-4" />
-                        &lt;span className="sr-only">Toggle menu&lt;/span>
-                        &lt;/Button>
-                    &lt;/DropdownMenuTrigger>
-                    &lt;DropdownMenuContent align="end">
-                        &lt;DropdownMenuLabel>Actions&lt;/DropdownMenuLabel>
-                        &lt;DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details&lt;/DropdownMenuItem>
-                        &lt;DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result&lt;/DropdownMenuItem>
-                        &lt;DropdownMenuItem className="text-destructive">
+                <div className="text-right">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
                         Delete
-                        &lt;/DropdownMenuItem>
-                    &lt;/DropdownMenuContent>
-                    &lt;/DropdownMenu>
-                &lt;/div>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             ),
         },
     ];
 
-    interface DataTableColumnDef&lt;TData> {
+    interface DataTableColumnDef<TData> {
         accessorKey: keyof TData | 'actions';
         header: {
           title: string;
@@ -348,7 +348,7 @@ export default function CandidatesPage() {
 
 
     const createQueryString = React.useCallback(
-        (params: Record&lt;string, string | number | null>) => {
+        (params: Record<string, string | number | null>) => {
           const newSearchParams = new URLSearchParams(searchParams.toString());
           for (const [key, value] of Object.entries(params)) {
             if (value === null) {
@@ -412,7 +412,7 @@ export default function CandidatesPage() {
         if (options.sort) {
             filteredCandidates.sort((a, b) => {
                 const key = options.sort!.id as keyof Candidate;
-                if (a[key] &lt; b[key]) return options.sort!.desc ? 1 : -1;
+                if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
                 if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
                 return 0;
             });
@@ -459,192 +459,192 @@ export default function CandidatesPage() {
     };
 
     return (
-        &lt;>
-            &lt;ViewDetailsModal candidate={modalState.candidate} open={modalState.type === 'view'} onOpenChange={handleCloseModal} />
-            &lt;ResultModal candidate={modalState.candidate} open={modalState.type === 'result'} onOpenChange={handleCloseModal} />
-            &lt;div className="space-y-4">
-                &lt;div>
-                    &lt;h1 className="text-2xl font-bold">Candidates&lt;/h1>
-                    &lt;p className="text-muted-foreground">
+        <>
+            <ViewDetailsModal candidate={modalState.candidate} open={modalState.type === 'view'} onOpenChange={handleCloseModal} />
+            <ResultModal candidate={modalState.candidate} open={modalState.type === 'result'} onOpenChange={handleCloseModal} />
+            <div className="space-y-4">
+                <div>
+                    <h1 className="text-2xl font-bold">Candidates</h1>
+                    <p className="text-muted-foreground">
                         View and manage all registered candidates.
-                    &lt;/p>
-                &lt;/div>
+                    </p>
+                </div>
 
-                &lt;div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    &lt;Card>
-                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        &lt;CardTitle className="text-sm font-medium">Total Candidates&lt;/CardTitle>
-                        &lt;Users className="h-4 w-4 text-muted-foreground" />
-                    &lt;/CardHeader>
-                    &lt;CardContent>
-                        &lt;div className="text-2xl font-bold">{stats.total}&lt;/div>
-                    &lt;/CardContent>
-                    &lt;/Card>
-                    &lt;Card>
-                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        &lt;CardTitle className="text-sm font-medium">Finished Exam&lt;/CardTitle>
-                        &lt;CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    &lt;/CardHeader>
-                    &lt;CardContent>
-                        &lt;div className="text-2xl font-bold">{stats.finished}&lt;/div>
-                    &lt;/CardContent>
-                    &lt;/Card>
-                    &lt;Card>
-                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        &lt;CardTitle className="text-sm font-medium">Flagged&lt;/CardTitle>
-                        &lt;AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    &lt;/CardHeader>
-                    &lt;CardContent>
-                        &lt;div className="text-2xl font-bold">{stats.flagged}&lt;/div>
-                    &lt;/CardContent>
-                    &lt;/Card>
-                    &lt;Card>
-                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        &lt;CardTitle className="text-sm font-medium">In Progress&lt;/CardTitle>
-                        &lt;Clock className="h-4 w-4 text-muted-foreground" />
-                    &lt;/CardHeader>
-                    &lt;CardContent>
-                        &lt;div className="text-2xl font-bold">{stats.inProgress}&lt;/div>
-                    &lt;/CardContent>
-                    &lt;/Card>
-                &lt;/div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.total}</div>
+                    </CardContent>
+                    </Card>
+                    <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.finished}</div>
+                    </CardContent>
+                    </Card>
+                    <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Flagged</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.flagged}</div>
+                    </CardContent>
+                    </Card>
+                    <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.inProgress}</div>
+                    </CardContent>
+                    </Card>
+                </div>
 
-                &lt;div className="space-y-4">
-                    &lt;div className="flex items-center justify-between gap-4">
-                        &lt;div className="relative">
-                        &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        &lt;Input
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
                             placeholder={`Search candidates...`}
                             value={debouncedSearchTerm}
                             onChange={(e) => setDebouncedSearchTerm(e.target.value)}
                             className="pl-10 w-full md:w-80"
                         />
-                        &lt;/div>
-                    &lt;/div>
-                    &lt;div className="rounded-md border">
-                        &lt;Table>
-                        &lt;TableHeader>
-                            &lt;TableRow>
+                        </div>
+                    </div>
+                    <div className="rounded-md border">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
                             {columns.map((column) => (
-                                &lt;TableHead key={String(column.accessorKey)}>
+                                <TableHead key={String(column.accessorKey)}>
                                 {column.header.sortable ? (
-                                    &lt;Button
+                                    <Button
                                     variant="ghost"
                                     onClick={() => handleSort(String(column.accessorKey))}
                                     >
                                     {column.header.title}
-                                    &lt;ArrowUpDown className="ml-2 h-4 w-4" />
-                                    &lt;/Button>
+                                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
                                 ) : (
                                     column.header.title
                                 )}
-                                &lt;/TableHead>
+                                </TableHead>
                             ))}
-                            &lt;/TableRow>
-                        &lt;/TableHeader>
-                        &lt;TableBody>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {isLoading ? (
                                 Array.from({ length: Number(pageSize) }).map((_, i) => (
-                                    &lt;TableRow key={i}>
+                                    <TableRow key={i}>
                                         {columns.map((col, j) => (
-                                            &lt;TableCell key={j}>
-                                                &lt;Skeleton className="h-6" />
-                                            &lt;/TableCell>
+                                            <TableCell key={j}>
+                                                <Skeleton className="h-6" />
+                                            </TableCell>
                                         ))}
-                                    &lt;/TableRow>
+                                    </TableRow>
                                 ))
                             ) : data.length > 0 ? (
                             data.map((row, index) => (
-                                &lt;TableRow key={index}>
+                                <TableRow key={index}>
                                 {columns.map((column) => (
-                                    &lt;TableCell key={String(column.accessorKey)}>
+                                    <TableCell key={String(column.accessorKey)}>
                                     {column.cell
                                         ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
                                         : (row as any)[column.accessorKey]}
-                                    &lt;/TableCell>
+                                    </TableCell>
                                 ))}
-                                &lt;/TableRow>
+                                </TableRow>
                             ))
                             ) : (
-                            &lt;TableRow>
-                                &lt;TableCell
+                            <TableRow>
+                                <TableCell
                                 colSpan={columns.length}
                                 className="h-24 text-center"
                                 >
                                 No results found.
-                                &lt;/TableCell>
-                            &lt;/TableRow>
+                                </TableCell>
+                            </TableRow>
                             )}
-                        &lt;/TableBody>
-                        &lt;/Table>
-                    &lt;/div>
+                        </TableBody>
+                        </Table>
+                    </div>
 
-                    &lt;div className="flex items-center justify-between">
-                        &lt;div className="flex items-center space-x-2">
-                            &lt;p className="text-sm font-medium">Rows per page&lt;/p>
-                            &lt;Select
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium">Rows per page</p>
+                            <Select
                                 value={pageSize}
                                 onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
                             >
-                                &lt;SelectTrigger className="h-8 w-[70px]">
-                                &lt;SelectValue placeholder={pageSize} />
-                                &lt;/SelectTrigger>
-                                &lt;SelectContent side="top">
+                                <SelectTrigger className="h-8 w-[70px]">
+                                <SelectValue placeholder={pageSize} />
+                                </SelectTrigger>
+                                <SelectContent side="top">
                                 {[5, 10, 20, 50].map((size) => (
-                                    &lt;SelectItem key={size} value={`${size}`}>
+                                    <SelectItem key={size} value={`${size}`}>
                                     {size}
-                                    &lt;/SelectItem>
+                                    </SelectItem>
                                 ))}
-                                &lt;/SelectContent>
-                            &lt;/Select>
-                        &lt;/div>
-                        &lt;div className="flex items-center space-x-2">
-                            &lt;span className="text-sm text-muted-foreground">
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <span className="text-sm text-muted-foreground">
                                 Page {page} of {pageCount}
-                            &lt;/span>
-                        &lt;div className="flex items-center space-x-1">
-                            &lt;Button
+                            </span>
+                        <div className="flex items-center space-x-1">
+                            <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
                             disabled={pageIndex === 0}
                             >
-                            &lt;span className="sr-only">Go to first page&lt;/span>
-                            &lt;ChevronsLeft className="h-4 w-4" />
-                            &lt;/Button>
-                            &lt;Button
+                            <span className="sr-only">Go to first page</span>
+                            <ChevronsLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
                             disabled={pageIndex === 0}
                             >
-                            &lt;span className="sr-only">Go to previous page&lt;/span>
-                            &lt;ChevronLeft className="h-4 w-4" />
-                            &lt;/Button>
-                            &lt;Button
+                            <span className="sr-only">Go to previous page</span>
+                            <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
                             disabled={pageIndex + 1 >= pageCount}
                             >
-                            &lt;span className="sr-only">Go to next page&lt;/span>
-                            &lt;ChevronRight className="h-4 w-4" />
-                            &lt;/Button>
-                            &lt;Button
+                            <span className="sr-only">Go to next page</span>
+                            <ChevronRight className="h-4 w-4" />
+                            </Button>
+                            <Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
                             disabled={pageIndex + 1 >= pageCount}
                             >
-                            &lt;span className="sr-only">Go to last page&lt;/span>
-                            &lt;ChevronsRight className="h-4 w-4" />
-                            &lt;/Button>
-                        &lt;/div>
-                        &lt;/div>
-                    &lt;/div>
-                &lt;/div>
-            &lt;/div>
-        &lt;/>
+                            <span className="sr-only">Go to last page</span>
+                            <ChevronsRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
     );
 }
     
