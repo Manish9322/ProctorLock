@@ -42,7 +42,10 @@ import {
     FileText,
     Phone,
     GraduationCap,
-    Award
+    Award,
+    Mail,
+    Globe,
+    CreditCard
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,69 +56,119 @@ import { Progress } from '@/components/ui/progress';
 type Candidate = {
   id: string;
   name: string;
+  email: string;
+  phoneNumber: string;
+  timezone: string;
+  role: string;
+  college: string;
+  govIdType: string;
+  govIdNumber: string;
   examId: string;
   status: 'Finished' | 'Flagged' | 'In Progress' | 'Not Started';
-  college: string;
-  role: string;
-  phoneNumber: string;
   score: number;
 };
 
 const candidatesData: Candidate[] = [
-  { id: 'user1', name: 'Alice Johnson', examId: 'CS101-FINAL', status: 'Finished', college: 'Stanford University', role: 'Student', phoneNumber: '123-456-7890', score: 88 },
-  { id: 'user2', name: 'Bob Williams', examId: 'MA203-MIDTERM', status: 'Flagged', college: 'MIT', role: 'Student', phoneNumber: '234-567-8901', score: 65 },
-  { id: 'user3', name: 'Charlie Brown', examId: 'PHY201-QUIZ3', status: 'In Progress', college: 'Harvard University', role: 'Professional', phoneNumber: '345-678-9012', score: 72 },
-  { id: 'user4', name: 'Diana Miller', examId: 'CS101-FINAL', status: 'Finished', college: 'UC Berkeley', role: 'Student', phoneNumber: '456-789-0123', score: 95 },
-  { id: 'user5', name: 'Eve Davis', examId: 'BIO-101', status: 'Not Started', college: 'Yale University', role: 'Student', phoneNumber: '567-890-1234', score: 0 },
-  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished', college: 'Princeton University', role: 'Professional', phoneNumber: '678-901-2345', score: 91 },
-  { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Columbia University', role: 'Student', phoneNumber: '789-012-3456', score: 82 },
-  { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged', college: 'University of Chicago', role: 'Student', phoneNumber: '890-123-4567', score: 55 },
-  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started', college: 'Duke University', role: 'Professional', phoneNumber: '901-234-5678', score: 0 },
-  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished', college: 'Northwestern University', role: 'Student', phoneNumber: '012-345-6789', score: 78 },
-  { id: 'user11', name: 'Kate Hill', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Johns Hopkins University', role: 'Student', phoneNumber: '111-222-3333', score: 85 },
-  { id: 'user12', name: 'Liam Hall', examId: 'PHY201-QUIZ3', status: 'Finished', college: 'University of Pennsylvania', role: 'Professional', phoneNumber: '444-555-6666', score: 98 },
-  { id: 'user13', name: 'Mia Adams', examId: 'BIO-101', status: 'Not Started', college: 'Caltech', role: 'Student', phoneNumber: '777-888-9999', score: 0 },
-  { id: 'user14', name: 'Noah Baker', examId: 'CS101-FINAL', status: 'Flagged', college: 'Cornell University', role: 'Student', phoneNumber: '121-314-151', score: 71 },
-  { id: 'user15', name: 'Olivia Clark', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Brown University', role: 'Professional', phoneNumber: '617-181-920', score: 79 },
+  { id: 'user1', name: 'Alice Johnson', email: 'alice.j@example.com', phoneNumber: '123-456-7890', timezone: 'America/Los_Angeles', role: 'Student', college: 'Stanford University', govIdType: 'Passport', govIdNumber: 'A1234567', examId: 'CS101-FINAL', status: 'Finished', score: 88 },
+  { id: 'user2', name: 'Bob Williams', email: 'bob.w@example.com', phoneNumber: '234-567-8901', timezone: 'America/New_York', role: 'Student', college: 'MIT', govIdType: 'Driver\'s License', govIdNumber: 'B9876543', examId: 'MA203-MIDTERM', status: 'Flagged', score: 65 },
+  { id: 'user3', name: 'Charlie Brown', email: 'charlie.b@example.com', phoneNumber: '345-678-9012', timezone: 'Europe/London', role: 'Professional', college: 'Harvard University', govIdType: 'National ID', govIdNumber: 'C5678123', examId: 'PHY201-QUIZ3', status: 'In Progress', score: 72 },
+  { id: 'user4', name: 'Diana Miller', email: 'diana.m@example.com', phoneNumber: '456-789-0123', timezone: 'America/Los_Angeles', role: 'Student', college: 'UC Berkeley', govIdType: 'Passport', govIdNumber: 'D8765432', examId: 'CS101-FINAL', status: 'Finished', score: 95 },
+  { id: 'user5', name: 'Eve Davis', email: 'eve.d@example.com', phoneNumber: '567-890-1234', timezone: 'America/Chicago', role: 'Student', college: 'Yale University', govIdType: 'Driver\'s License', govIdNumber: 'E4567890', examId: 'BIO-101', status: 'Not Started', score: 0 },
+  { id: 'user6', name: 'Frank White', email: 'frank.w@example.com', phoneNumber: '678-901-2345', timezone: 'Europe/Paris', role: 'Professional', college: 'Princeton University', govIdType: 'Passport', govIdNumber: 'F1122334', examId: 'CS101-FINAL', status: 'Finished', score: 91 },
+  { id: 'user7', name: 'Grace Lee', email: 'grace.l@example.com', phoneNumber: '789-012-3456', timezone: 'Asia/Tokyo', role: 'Student', college: 'Columbia University', govIdType: 'National ID', govIdNumber: 'G5566778', examId: 'MA203-MIDTERM', status: 'In Progress', score: 82 },
+  { id: 'user8', name: 'Henry Scott', email: 'henry.s@example.com', phoneNumber: '890-123-4567', timezone: 'Australia/Sydney', role: 'Student', college: 'University of Chicago', govIdType: 'Driver\'s License', govIdNumber: 'H9988776', examId: 'PHY201-QUIZ3', status: 'Flagged', score: 55 },
+  { id: 'user9', name: 'Ivy Green', email: 'ivy.g@example.com', phoneNumber: '901-234-5678', timezone: 'America/New_York', role: 'Professional', college: 'Duke University', govIdType: 'Passport', govIdNumber: 'I2233445', examId: 'BIO-101', status: 'Not Started', score: 0 },
+  { id: 'user10', name: 'Jack King', email: 'jack.k@example.com', phoneNumber: '012-345-6789', timezone: 'Europe/Berlin', role: 'Student', college: 'Northwestern University', govIdType: 'National ID', govIdNumber: 'J6677889', examId: 'CS101-FINAL', status: 'Finished', score: 78 },
+  { id: 'user11', name: 'Kate Hill', email: 'kate.h@example.com', phoneNumber: '111-222-3333', timezone: 'America/Denver', role: 'Student', college: 'Johns Hopkins University', govIdType: 'Passport', govIdNumber: 'K1212121', examId: 'MA203-MIDTERM', status: 'In Progress', score: 85 },
+  { id: 'user12', name: 'Liam Hall', email: 'liam.h@example.com', phoneNumber: '444-555-6666', timezone: 'America/Los_Angeles', role: 'Professional', college: 'University of Pennsylvania', govIdType: 'Driver\'s License', govIdNumber: 'L3434343', examId: 'PHY201-QUIZ3', status: 'Finished', score: 98 },
+  { id: 'user13', name: 'Mia Adams', email: 'mia.a@example.com', phoneNumber: '777-888-9999', timezone: 'America/New_York', role: 'Student', college: 'Caltech', govIdType: 'National ID', govIdNumber: 'M5656565', examId: 'BIO-101', status: 'Not Started', score: 0 },
+  { id: 'user14', name: 'Noah Baker', email: 'noah.b@example.com', phoneNumber: '121-314-151', timezone: 'Europe/London', role: 'Student', college: 'Cornell University', govIdType: 'Passport', govIdNumber: 'N7878787', examId: 'CS101-FINAL', status: 'Flagged', score: 71 },
+  { id: 'user15', name: 'Olivia Clark', email: 'olivia.c@example.com', phoneNumber: '617-181-920', timezone: 'America/Chicago', role: 'Professional', college: 'Brown University', govIdType: 'Driver\'s License', govIdNumber: 'O9090909', examId: 'MA203-MIDTERM', status: 'In Progress', score: 79 },
 ];
 
 const ViewDetailsModal = ({ candidate, open, onOpenChange }: { candidate: Candidate | null, open: boolean, onOpenChange: (open: boolean) => void }) => {
     if (!candidate) return null;
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Candidate Details</DialogTitle>
                     <DialogDescription>Full information for {candidate.name}.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4 text-sm">
-                    <div className="flex items-center gap-3">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{candidate.name}</span>
-                        <Badge variant="secondary" className="ml-auto">{candidate.role}</Badge>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-muted-foreground text-xs">Full Name</p>
+                                <p className="font-medium">{candidate.name}</p>
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-3">
+                            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-muted-foreground text-xs">Role</p>
+                                <p className="font-medium">{candidate.role}</p>
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-3">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                             <div>
+                                <p className="text-muted-foreground text-xs">Email</p>
+                                <p className="font-medium">{candidate.email}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-muted-foreground text-xs">Phone</p>
+                                <p className="font-medium">{candidate.phoneNumber}</p>
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-3">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                             <div>
+                                <p className="text-muted-foreground text-xs">Organization / Institute</p>
+                                <p className="font-medium">{candidate.college}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-muted-foreground text-xs">Timezone</p>
+                                <p className="font-medium">{candidate.timezone}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span>{candidate.college}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{candidate.phoneNumber}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span>Exam: {candidate.examId}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                         <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>Status:</span>
-                            <Badge variant={
-                                candidate.status === 'Flagged' ? 'destructive'
-                                : candidate.status === 'Finished' ? 'secondary'
-                                : candidate.status === 'In Progress' ? 'default'
-                                : 'outline'
-                            }>{candidate.status}</Badge>
+                     <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-2">Verification &amp; Exam Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="flex items-center gap-3">
+                                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                    <p className="text-muted-foreground text-xs">{candidate.govIdType}</p>
+                                    <p className="font-medium">{candidate.govIdNumber}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-center gap-3">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                 <div>
+                                    <p className="text-muted-foreground text-xs">Exam ID</p>
+                                    <p className="font-medium">{candidate.examId}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span>Status:</span>
+                                    <Badge variant={
+                                        candidate.status === 'Flagged' ? 'destructive'
+                                        : candidate.status === 'Finished' ? 'secondary'
+                                        : candidate.status === 'In Progress' ? 'default'
+                                        : 'outline'
+                                    }>{candidate.status}</Badge>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,8 +181,8 @@ const ResultModal = ({ candidate, open, onOpenChange }: { candidate: Candidate |
     if (!candidate) return null;
 
     const getScoreColor = (score: number) => {
-        if (score < 60) return "text-destructive";
-        if (score < 80) return "text-amber-500";
+        if (score &lt; 60) return "text-destructive";
+        if (score &lt; 80) return "text-amber-500";
         return "text-green-500";
     }
 
@@ -170,7 +223,7 @@ export default function CandidatesPage() {
     const searchParams = useSearchParams();
 
     // Modal state
-    const [modalState, setModalState] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
+    const [modalState, setModalState: any] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
 
     // Search params
     const page = searchParams.get('page') ?? '1';
@@ -184,7 +237,7 @@ export default function CandidatesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
-    const searchableColumns: (keyof Candidate)[] = ['name', 'examId', 'college', 'role'];
+    const searchableColumns: (keyof Candidate)[] = ['name', 'email', 'examId', 'college', 'role', 'phoneNumber', 'govIdNumber'];
     
     const handleOpenModal = (type: 'view' | 'result', candidate: Candidate) => {
         setModalState({ type, candidate });
@@ -201,7 +254,7 @@ export default function CandidatesPage() {
                 title: 'Name',
                 sortable: true,
             },
-            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+            cell: ({ row }) => &lt;div className="font-medium">{row.getValue('name')}&lt;/div>,
         },
         {
             accessorKey: 'college',
@@ -240,7 +293,7 @@ export default function CandidatesPage() {
             cell: ({ row }) => {
                 const status = row.getValue('status') as Candidate['status'];
                 return (
-                    <Badge
+                    &lt;Badge
                         variant={
                             status === 'Flagged'
                             ? 'destructive'
@@ -252,7 +305,7 @@ export default function CandidatesPage() {
                         }
                         >
                         {status}
-                    </Badge>
+                    &lt;/Badge>
                 );
             },
         },
@@ -262,29 +315,29 @@ export default function CandidatesPage() {
                 title: 'Actions',
             },
             cell: ({ row }) => (
-                <div className="text-right">
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                &lt;div className="text-right">
+                    &lt;DropdownMenu>
+                    &lt;DropdownMenuTrigger asChild>
+                        &lt;Button aria-haspopup="true" size="icon" variant="ghost">
+                        &lt;MoreHorizontal className="h-4 w-4" />
+                        &lt;span className="sr-only">Toggle menu&lt;/span>
+                        &lt;/Button>
+                    &lt;/DropdownMenuTrigger>
+                    &lt;DropdownMenuContent align="end">
+                        &lt;DropdownMenuLabel>Actions&lt;/DropdownMenuLabel>
+                        &lt;DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details&lt;/DropdownMenuItem>
+                        &lt;DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result&lt;/DropdownMenuItem>
+                        &lt;DropdownMenuItem className="text-destructive">
                         Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        &lt;/DropdownMenuItem>
+                    &lt;/DropdownMenuContent>
+                    &lt;/DropdownMenu>
+                &lt;/div>
             ),
         },
     ];
 
-    interface DataTableColumnDef<TData> {
+    interface DataTableColumnDef&lt;TData> {
         accessorKey: keyof TData | 'actions';
         header: {
           title: string;
@@ -295,7 +348,7 @@ export default function CandidatesPage() {
 
 
     const createQueryString = React.useCallback(
-        (params: Record<string, string | number | null>) => {
+        (params: Record&lt;string, string | number | null>) => {
           const newSearchParams = new URLSearchParams(searchParams.toString());
           for (const [key, value] of Object.entries(params)) {
             if (value === null) {
@@ -359,7 +412,7 @@ export default function CandidatesPage() {
         if (options.sort) {
             filteredCandidates.sort((a, b) => {
                 const key = options.sort!.id as keyof Candidate;
-                if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
+                if (a[key] &lt; b[key]) return options.sort!.desc ? 1 : -1;
                 if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
                 return 0;
             });
@@ -406,191 +459,192 @@ export default function CandidatesPage() {
     };
 
     return (
-        <>
-            <ViewDetailsModal candidate={modalState.candidate} open={modalState.type === 'view'} onOpenChange={handleCloseModal} />
-            <ResultModal candidate={modalState.candidate} open={modalState.type === 'result'} onOpenChange={handleCloseModal} />
-            <div className="space-y-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Candidates</h1>
-                    <p className="text-muted-foreground">
+        &lt;>
+            &lt;ViewDetailsModal candidate={modalState.candidate} open={modalState.type === 'view'} onOpenChange={handleCloseModal} />
+            &lt;ResultModal candidate={modalState.candidate} open={modalState.type === 'result'} onOpenChange={handleCloseModal} />
+            &lt;div className="space-y-4">
+                &lt;div>
+                    &lt;h1 className="text-2xl font-bold">Candidates&lt;/h1>
+                    &lt;p className="text-muted-foreground">
                         View and manage all registered candidates.
-                    </p>
-                </div>
+                    &lt;/p>
+                &lt;/div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.total}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.finished}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Flagged</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.flagged}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.inProgress}</div>
-                    </CardContent>
-                    </Card>
-                </div>
+                &lt;div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    &lt;Card>
+                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        &lt;CardTitle className="text-sm font-medium">Total Candidates&lt;/CardTitle>
+                        &lt;Users className="h-4 w-4 text-muted-foreground" />
+                    &lt;/CardHeader>
+                    &lt;CardContent>
+                        &lt;div className="text-2xl font-bold">{stats.total}&lt;/div>
+                    &lt;/CardContent>
+                    &lt;/Card>
+                    &lt;Card>
+                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        &lt;CardTitle className="text-sm font-medium">Finished Exam&lt;/CardTitle>
+                        &lt;CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    &lt;/CardHeader>
+                    &lt;CardContent>
+                        &lt;div className="text-2xl font-bold">{stats.finished}&lt;/div>
+                    &lt;/CardContent>
+                    &lt;/Card>
+                    &lt;Card>
+                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        &lt;CardTitle className="text-sm font-medium">Flagged&lt;/CardTitle>
+                        &lt;AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    &lt;/CardHeader>
+                    &lt;CardContent>
+                        &lt;div className="text-2xl font-bold">{stats.flagged}&lt;/div>
+                    &lt;/CardContent>
+                    &lt;/Card>
+                    &lt;Card>
+                    &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        &lt;CardTitle className="text-sm font-medium">In Progress&lt;/CardTitle>
+                        &lt;Clock className="h-4 w-4 text-muted-foreground" />
+                    &lt;/CardHeader>
+                    &lt;CardContent>
+                        &lt;div className="text-2xl font-bold">{stats.inProgress}&lt;/div>
+                    &lt;/CardContent>
+                    &lt;/Card>
+                &lt;/div>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder={`Search ${searchableColumns.join(', ')}...`}
+                &lt;div className="space-y-4">
+                    &lt;div className="flex items-center justify-between gap-4">
+                        &lt;div className="relative">
+                        &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        &lt;Input
+                            placeholder={`Search candidates...`}
                             value={debouncedSearchTerm}
                             onChange={(e) => setDebouncedSearchTerm(e.target.value)}
                             className="pl-10 w-full md:w-80"
                         />
-                        </div>
-                    </div>
-                    <div className="rounded-md border">
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
+                        &lt;/div>
+                    &lt;/div>
+                    &lt;div className="rounded-md border">
+                        &lt;Table>
+                        &lt;TableHeader>
+                            &lt;TableRow>
                             {columns.map((column) => (
-                                <TableHead key={String(column.accessorKey)}>
+                                &lt;TableHead key={String(column.accessorKey)}>
                                 {column.header.sortable ? (
-                                    <Button
+                                    &lt;Button
                                     variant="ghost"
                                     onClick={() => handleSort(String(column.accessorKey))}
                                     >
                                     {column.header.title}
-                                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                                    </Button>
+                                    &lt;ArrowUpDown className="ml-2 h-4 w-4" />
+                                    &lt;/Button>
                                 ) : (
                                     column.header.title
                                 )}
-                                </TableHead>
+                                &lt;/TableHead>
                             ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                            &lt;/TableRow>
+                        &lt;/TableHeader>
+                        &lt;TableBody>
                             {isLoading ? (
                                 Array.from({ length: Number(pageSize) }).map((_, i) => (
-                                    <TableRow key={i}>
+                                    &lt;TableRow key={i}>
                                         {columns.map((col, j) => (
-                                            <TableCell key={j}>
-                                                <Skeleton className="h-6" />
-                                            </TableCell>
+                                            &lt;TableCell key={j}>
+                                                &lt;Skeleton className="h-6" />
+                                            &lt;/TableCell>
                                         ))}
-                                    </TableRow>
+                                    &lt;/TableRow>
                                 ))
                             ) : data.length > 0 ? (
                             data.map((row, index) => (
-                                <TableRow key={index}>
+                                &lt;TableRow key={index}>
                                 {columns.map((column) => (
-                                    <TableCell key={String(column.accessorKey)}>
+                                    &lt;TableCell key={String(column.accessorKey)}>
                                     {column.cell
                                         ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
                                         : (row as any)[column.accessorKey]}
-                                    </TableCell>
+                                    &lt;/TableCell>
                                 ))}
-                                </TableRow>
+                                &lt;/TableRow>
                             ))
                             ) : (
-                            <TableRow>
-                                <TableCell
+                            &lt;TableRow>
+                                &lt;TableCell
                                 colSpan={columns.length}
                                 className="h-24 text-center"
                                 >
                                 No results found.
-                                </TableCell>
-                            </TableRow>
+                                &lt;/TableCell>
+                            &lt;/TableRow>
                             )}
-                        </TableBody>
-                        </Table>
-                    </div>
+                        &lt;/TableBody>
+                        &lt;/Table>
+                    &lt;/div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <p className="text-sm font-medium">Rows per page</p>
-                            <Select
+                    &lt;div className="flex items-center justify-between">
+                        &lt;div className="flex items-center space-x-2">
+                            &lt;p className="text-sm font-medium">Rows per page&lt;/p>
+                            &lt;Select
                                 value={pageSize}
                                 onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
                             >
-                                <SelectTrigger className="h-8 w-[70px]">
-                                <SelectValue placeholder={pageSize} />
-                                </SelectTrigger>
-                                <SelectContent side="top">
+                                &lt;SelectTrigger className="h-8 w-[70px]">
+                                &lt;SelectValue placeholder={pageSize} />
+                                &lt;/SelectTrigger>
+                                &lt;SelectContent side="top">
                                 {[5, 10, 20, 50].map((size) => (
-                                    <SelectItem key={size} value={`${size}`}>
+                                    &lt;SelectItem key={size} value={`${size}`}>
                                     {size}
-                                    </SelectItem>
+                                    &lt;/SelectItem>
                                 ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground">
+                                &lt;/SelectContent>
+                            &lt;/Select>
+                        &lt;/div>
+                        &lt;div className="flex items-center space-x-2">
+                            &lt;span className="text-sm text-muted-foreground">
                                 Page {page} of {pageCount}
-                            </span>
-                        <div className="flex items-center space-x-1">
-                            <Button
+                            &lt;/span>
+                        &lt;div className="flex items-center space-x-1">
+                            &lt;Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
                             disabled={pageIndex === 0}
                             >
-                            <span className="sr-only">Go to first page</span>
-                            <ChevronsLeft className="h-4 w-4" />
-                            </Button>
-                            <Button
+                            &lt;span className="sr-only">Go to first page&lt;/span>
+                            &lt;ChevronsLeft className="h-4 w-4" />
+                            &lt;/Button>
+                            &lt;Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
                             disabled={pageIndex === 0}
                             >
-                            <span className="sr-only">Go to previous page</span>
-                            <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <Button
+                            &lt;span className="sr-only">Go to previous page&lt;/span>
+                            &lt;ChevronLeft className="h-4 w-4" />
+                            &lt;/Button>
+                            &lt;Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
                             disabled={pageIndex + 1 >= pageCount}
                             >
-                            <span className="sr-only">Go to next page</span>
-                            <ChevronRight className="h-4 w-4" />
-                            </Button>
-                            <Button
+                            &lt;span className="sr-only">Go to next page&lt;/span>
+                            &lt;ChevronRight className="h-4 w-4" />
+                            &lt;/Button>
+                            &lt;Button
                             variant="outline"
                             className="h-8 w-8 p-0"
                             onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
                             disabled={pageIndex + 1 >= pageCount}
                             >
-                            <span className="sr-only">Go to last page</span>
-                            <ChevronsRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
+                            &lt;span className="sr-only">Go to last page&lt;/span>
+                            &lt;ChevronsRight className="h-4 w-4" />
+                            &lt;/Button>
+                        &lt;/div>
+                        &lt;/div>
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+        &lt;/>
     );
 }
+    
