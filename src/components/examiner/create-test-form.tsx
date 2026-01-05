@@ -24,10 +24,42 @@ import {
   ChevronRight,
   ChevronLeft,
   Calendar as CalendarIcon,
+  PlusCircle,
+  Trash2,
+  Edit,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '../ui/checkbox';
 
 const steps = [
   { id: 'details', name: 'Test Details', icon: FileText },
@@ -36,6 +68,16 @@ const steps = [
   { id: 'rules', name: 'Rules & Proctoring', icon: Shield },
   { id: 'review', name: 'Review & Publish', icon: Star },
 ];
+
+export type Question = {
+  id: string;
+  type: 'mcq' | 'descriptive';
+  text: string;
+  options?: string[];
+  correctAnswer?: string;
+  marks: number;
+  negativeMarks?: number;
+};
 
 export function CreateTestForm() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -55,7 +97,7 @@ export function CreateTestForm() {
       case 'scheduling':
         return <TestSchedulingStep />;
       case 'questions':
-        return <p>Question configuration will go here.</p>;
+        return <TestQuestionsStep />;
       case 'rules':
         return <p>Rules and proctoring settings will go here.</p>;
       case 'review':
@@ -162,7 +204,13 @@ function TestDetailsStep() {
   );
 }
 
-function DatePicker({ date, setDate }: { date?: Date; setDate: (date?: Date) => void }) {
+function DatePicker({
+  date,
+  setDate,
+}: {
+  date?: Date;
+  setDate: (date?: Date) => void;
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -189,23 +237,24 @@ function DatePicker({ date, setDate }: { date?: Date; setDate: (date?: Date) => 
   );
 }
 
-
 function TestSchedulingStep() {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  
+
   return (
     <div className="space-y-6">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-         <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="exam-date">Exam Date</Label>
           <DatePicker date={date} setDate={setDate} />
         </div>
         <div className="space-y-2">
-            <Label>Timezone</Label>
-            <Input defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone} />
+          <Label>Timezone</Label>
+          <Input
+            defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone}
+          />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="start-time">Start Time</Label>
           <Input id="start-time" type="time" defaultValue="09:00" />
@@ -215,7 +264,7 @@ function TestSchedulingStep() {
           <Input id="end-time" type="time" defaultValue="17:00" />
         </div>
       </div>
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="duration">Duration (minutes)</Label>
           <Input id="duration" type="number" placeholder="e.g., 60" />
@@ -225,25 +274,251 @@ function TestSchedulingStep() {
           <Input id="grace-period" type="number" placeholder="e.g., 5" />
         </div>
       </div>
-       <Card className="bg-muted/50">
+      <Card className="bg-muted/50">
         <CardHeader>
           <CardTitle className="text-base">Summary</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-            <div className="flex justify-between">
-                <span>Total Exam Window:</span>
-                <span className="font-medium text-foreground">8 hours</span>
-            </div>
-             <div className="flex justify-between">
-                <span>Effective Start Time:</span>
-                <span className="font-medium text-foreground">9:00 AM</span>
-            </div>
-             <div className="flex justify-between">
-                <span>Effective End Time:</span>
-                <span className="font-medium text-foreground">5:05 PM</span>
-            </div>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <div className="flex justify-between">
+            <span>Total Exam Window:</span>
+            <span className="font-medium text-foreground">8 hours</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Effective Start Time:</span>
+            <span className="font-medium text-foreground">9:00 AM</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Effective End Time:</span>
+            <span className="font-medium text-foreground">5:05 PM</span>
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function QuestionDialog({
+  question,
+  onSave,
+  children,
+}: {
+  question?: Question;
+  onSave: (question: Question) => void;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<'mcq' | 'descriptive'>(
+    question?.type || 'mcq'
+  );
+  const [text, setText] = useState(question?.text || '');
+  const [marks, setMarks] = useState(question?.marks || 1);
+  const [negativeMarks, setNegativeMarks] = useState(
+    question?.negativeMarks || 0
+  );
+  const [options, setOptions] = useState(question?.options || ['', '', '', '']);
+  const [correctAnswer, setCorrectAnswer] = useState(
+    question?.correctAnswer || ''
+  );
+
+  const handleSave = () => {
+    const newQuestion: Question = {
+      id: question?.id || new Date().toISOString(),
+      type,
+      text,
+      marks,
+      negativeMarks,
+    };
+    if (type === 'mcq') {
+      newQuestion.options = options.filter(opt => opt.trim() !== '');
+      newQuestion.correctAnswer = correctAnswer;
+    }
+    onSave(newQuestion);
+    setOpen(false);
+  };
+  
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {question ? 'Edit Question' : 'Add New Question'}
+          </DialogTitle>
+          <DialogDescription>
+            Configure the question details, type, and scoring.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Question Type</Label>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as 'mcq' | 'descriptive')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select question type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mcq">Multiple Choice Question</SelectItem>
+                <SelectItem value="descriptive">Descriptive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="question-text">Question Text</Label>
+            <Textarea
+              id="question-text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Enter the question here..."
+            />
+          </div>
+          {type === 'mcq' && (
+            <div className="space-y-4 rounded-md border p-4">
+              <Label>Options</Label>
+              {options.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                  />
+                  <RadioGroup
+                    value={correctAnswer}
+                    onValueChange={setCorrectAnswer}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`correct-${index}`}
+                        checked={correctAnswer === option}
+                        onCheckedChange={() => setCorrectAnswer(option)}
+                      />
+                      <Label htmlFor={`correct-${index}`}>Correct</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="marks">Marks</Label>
+              <Input
+                id="marks"
+                type="number"
+                value={marks}
+                onChange={(e) => setMarks(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="negative-marks">Negative Marks (optional)</Label>
+              <Input
+                id="negative-marks"
+                type="number"
+                value={negativeMarks}
+                onChange={(e) => setNegativeMarks(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save Question</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TestQuestionsStep() {
+  const [questions, setQuestions] = useState<Question[]>([]);
+
+  const handleSaveQuestion = (question: Question) => {
+    const existingIndex = questions.findIndex((q) => q.id === question.id);
+    if (existingIndex > -1) {
+      const updatedQuestions = [...questions];
+      updatedQuestions[existingIndex] = question;
+      setQuestions(updatedQuestions);
+    } else {
+      setQuestions([...questions, question]);
+    }
+  };
+
+  const handleDeleteQuestion = (id: string) => {
+    setQuestions(questions.filter((q) => q.id !== id));
+  };
+  
+  const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+            <h3 className="font-semibold">Questions ({questions.length})</h3>
+            <p className="text-sm text-muted-foreground">Total Marks: {totalMarks}</p>
+        </div>
+        <QuestionDialog onSave={handleSaveQuestion}>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Question
+          </Button>
+        </QuestionDialog>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>Question</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-center">Marks</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {questions.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No questions added yet.
+                </TableCell>
+              </TableRow>
+            ) : (
+              questions.map((q, index) => (
+                <TableRow key={q.id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell className="max-w-sm truncate font-medium">
+                    {q.text}
+                  </TableCell>
+                  <TableCell className="uppercase">{q.type}</TableCell>
+                  <TableCell className="text-center">{q.marks}</TableCell>
+                  <TableCell className="text-right">
+                     <QuestionDialog question={q} onSave={handleSaveQuestion}>
+                        <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                     </QuestionDialog>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteQuestion(q.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
