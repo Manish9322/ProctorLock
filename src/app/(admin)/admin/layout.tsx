@@ -82,10 +82,9 @@ function AdminSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse">
-                <SidebarTrigger />
-                <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
-              </SidebarMenuButton>
+                <SidebarTrigger>
+                  <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
+                </SidebarTrigger>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
