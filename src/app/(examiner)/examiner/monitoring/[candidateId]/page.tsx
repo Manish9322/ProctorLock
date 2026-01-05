@@ -113,7 +113,7 @@ export default function CandidateMonitoringPage({
             </div>
           </div>
           <div className='flex items-center gap-2'>
-             <Badge variant={candidateDetails.status === 'Flagged' ? 'destructive' : 'default'}>
+             <Badge variant={'outline'}>
                 {candidateDetails.status}
             </Badge>
           </div>
@@ -126,9 +126,9 @@ export default function CandidateMonitoringPage({
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground"/> <span>Last Seen: <span className="font-medium">{sessionHealth.lastHeartbeat}</span></span></div>
-                    <div className="flex items-center gap-2"><Signal className="h-4 w-4 text-muted-foreground"/> <span>Network: <span className="font-medium text-green-600">{sessionHealth.connection}</span></span></div>
-                    <div className="flex items-center gap-2"><Fullscreen className="h-4 w-4 text-muted-foreground"/> <span>Fullscreen: <span className="font-medium text-green-600">{sessionHealth.fullscreen}</span></span></div>
-                    <div className="flex items-center gap-2"><Eye className="h-4 w-4 text-muted-foreground"/> <span>Tab Focus: <span className="font-medium text-green-600">{sessionHealth.focus}</span></span></div>
+                    <div className="flex items-center gap-2"><Signal className="h-4 w-4 text-muted-foreground"/> <span>Network: <span className="font-medium">{sessionHealth.connection}</span></span></div>
+                    <div className="flex items-center gap-2"><Fullscreen className="h-4 w-4 text-muted-foreground"/> <span>Fullscreen: <span className="font-medium">{sessionHealth.fullscreen}</span></span></div>
+                    <div className="flex items-center gap-2"><Eye className="h-4 w-4 text-muted-foreground"/> <span>Tab Focus: <span className="font-medium">{sessionHealth.focus}</span></span></div>
                 </CardContent>
             </Card>
              <Card>
@@ -176,15 +176,7 @@ export default function CandidateMonitoringPage({
                         <Tooltip>
                           <TooltipTrigger>
                             <span
-                              className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                                log.severity === 'critical'
-                                  ? 'bg-destructive/10 text-destructive'
-                                  : log.severity === 'high'
-                                  ? 'bg-orange-500/10 text-orange-500'
-                                   : log.severity === 'medium'
-                                   ? 'bg-yellow-500/10 text-yellow-500'
-                                  : 'bg-muted text-muted-foreground'
-                              }`}
+                              className='flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground'
                             >
                               {log.type === 'focus' && <AlertTriangle className="h-4 w-4" />}
                               {log.type === 'activity' && <Keyboard className="h-4 w-4" />}
@@ -198,11 +190,7 @@ export default function CandidateMonitoringPage({
                       </div>
                       <div className="flex-1">
                         <p
-                          className={`font-medium ${
-                            log.severity === 'critical' || log.severity === 'high'
-                              ? 'text-destructive'
-                              : ''
-                          }`}
+                          className='font-medium'
                         >
                           {log.event}
                         </p>
