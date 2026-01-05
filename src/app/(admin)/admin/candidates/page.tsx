@@ -26,6 +26,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
     ArrowUpDown,
     ChevronLeft,
     ChevronRight,
@@ -45,7 +55,8 @@ import {
     Award,
     Mail,
     Globe,
-    CreditCard
+    CreditCard,
+    Trash,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -229,6 +240,7 @@ export default function CandidatesPage() {
 
     // Modal state
     const [modalState, setModalState] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
+    const [deleteCandidate, setDeleteCandidate] = useState<Candidate | null>(null);
 
     // Search params
     const page = searchParams.get('page') ?? '1';
@@ -251,6 +263,27 @@ export default function CandidatesPage() {
     const handleCloseModal = () => {
         setModalState({ type: null, candidate: null });
     };
+
+    const handleDeleteClick = (candidate: Candidate) => {
+        setDeleteCandidate(candidate);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (deleteCandidate) {
+            console.log(`Deleting candidate ${deleteCandidate.id}`);
+            setDeleteCandidate(null);
+        }
+    };
+
+
+    interface DataTableColumnDef<TData> {
+        accessorKey: keyof TData | 'actions';
+        header: {
+          title: string;
+          sortable?: boolean;
+        };
+        cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
+    }
 
     const columns: DataTableColumnDef<Candidate>[] = [
         {
@@ -332,8 +365,11 @@ export default function CandidatesPage() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                        Delete
+                        <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteClick(row.original)}
+                        >
+                            Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                     </DropdownMenu>
@@ -341,15 +377,6 @@ export default function CandidatesPage() {
             ),
         },
     ];
-
-    interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions';
-        header: {
-          title: string;
-          sortable?: boolean;
-        };
-        cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
-    }
 
 
     const createQueryString = React.useCallback(
@@ -462,192 +489,212 @@ export default function CandidatesPage() {
         }
         router.push(`${pathname}?${createQueryString({ sort: newSort, page: '1' })}`);
     };
+    
+    const PageContent = () => (
+        <div className="space-y-4">
+            <div>
+                <h1 className="text-2xl font-bold">Candidates</h1>
+                <p className="text-muted-foreground">
+                    View and manage all registered candidates.
+                </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.finished}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Flagged</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.flagged}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.inProgress}</div>
+                </CardContent>
+                </Card>
+            </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder={`Search candidates...`}
+                        value={debouncedSearchTerm}
+                        onChange={(e) => setDebouncedSearchTerm(e.target.value)}
+                        className="pl-10 w-full md:w-80"
+                    />
+                    </div>
+                </div>
+                <div className="rounded-md border">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        {columns.map((column) => (
+                            <TableHead key={String(column.accessorKey)}>
+                            {column.header.sortable ? (
+                                <Button
+                                variant="ghost"
+                                onClick={() => handleSort(String(column.accessorKey))}
+                                >
+                                {column.header.title}
+                                <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            ) : (
+                                column.header.title
+                            )}
+                            </TableHead>
+                        ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: Number(pageSize) }).map((_, i) => (
+                                <TableRow key={i}>
+                                    {columns.map((col, j) => (
+                                        <TableCell key={j}>
+                                            <Skeleton className="h-6" />
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : data.length > 0 ? (
+                        data.map((row, index) => (
+                            <TableRow key={index}>
+                            {columns.map((column) => (
+                                <TableCell key={String(column.accessorKey)}>
+                                {column.cell
+                                    ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
+                                    : (row as any)[column.accessorKey]}
+                                </TableCell>
+                            ))}
+                            </TableRow>
+                        ))
+                        ) : (
+                        <TableRow>
+                            <TableCell
+                            colSpan={columns.length}
+                            className="h-24 text-center"
+                            >
+                            No results found.
+                            </TableCell>
+                        </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium">Rows per page</p>
+                        <Select
+                            value={pageSize}
+                            onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
+                        >
+                            <SelectTrigger className="h-8 w-[70px]">
+                            <SelectValue placeholder={pageSize} />
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                            {[5, 10, 20, 50].map((size) => (
+                                <SelectItem key={size} value={`${size}`}>
+                                {size}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground">
+                            Page {page} of {pageCount}
+                        </span>
+                    <div className="flex items-center space-x-1">
+                        <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
+                        disabled={pageIndex === 0}
+                        >
+                        <span className="sr-only">Go to first page</span>
+                        <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
+                        disabled={pageIndex === 0}
+                        >
+                        <span className="sr-only">Go to previous page</span>
+                        <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
+                        disabled={pageIndex + 1 >= pageCount}
+                        >
+                        <span className="sr-only">Go to next page</span>
+                        <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
+                        disabled={pageIndex + 1 >= pageCount}
+                        >
+                        <span className="sr-only">Go to last page</span>
+                        <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <>
             <CandidateModal modalState={modalState} onOpenChange={(open) => !open && handleCloseModal()} />
-            <div className="space-y-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Candidates</h1>
-                    <p className="text-muted-foreground">
-                        View and manage all registered candidates.
-                    </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.total}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.finished}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Flagged</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.flagged}</div>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.inProgress}</div>
-                    </CardContent>
-                    </Card>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder={`Search candidates...`}
-                            value={debouncedSearchTerm}
-                            onChange={(e) => setDebouncedSearchTerm(e.target.value)}
-                            className="pl-10 w-full md:w-80"
-                        />
-                        </div>
-                    </div>
-                    <div className="rounded-md border">
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
-                            {columns.map((column) => (
-                                <TableHead key={String(column.accessorKey)}>
-                                {column.header.sortable ? (
-                                    <Button
-                                    variant="ghost"
-                                    onClick={() => handleSort(String(column.accessorKey))}
-                                    >
-                                    {column.header.title}
-                                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                ) : (
-                                    column.header.title
-                                )}
-                                </TableHead>
-                            ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                Array.from({ length: Number(pageSize) }).map((_, i) => (
-                                    <TableRow key={i}>
-                                        {columns.map((col, j) => (
-                                            <TableCell key={j}>
-                                                <Skeleton className="h-6" />
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : data.length > 0 ? (
-                            data.map((row, index) => (
-                                <TableRow key={index}>
-                                {columns.map((column) => (
-                                    <TableCell key={String(column.accessorKey)}>
-                                    {column.cell
-                                        ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
-                                        : (row as any)[column.accessorKey]}
-                                    </TableCell>
-                                ))}
-                                </TableRow>
-                            ))
-                            ) : (
-                            <TableRow>
-                                <TableCell
-                                colSpan={columns.length}
-                                className="h-24 text-center"
-                                >
-                                No results found.
-                                </TableCell>
-                            </TableRow>
-                            )}
-                        </TableBody>
-                        </Table>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <p className="text-sm font-medium">Rows per page</p>
-                            <Select
-                                value={pageSize}
-                                onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
-                            >
-                                <SelectTrigger className="h-8 w-[70px]">
-                                <SelectValue placeholder={pageSize} />
-                                </SelectTrigger>
-                                <SelectContent side="top">
-                                {[5, 10, 20, 50].map((size) => (
-                                    <SelectItem key={size} value={`${size}`}>
-                                    {size}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground">
-                                Page {page} of {pageCount}
-                            </span>
-                        <div className="flex items-center space-x-1">
-                            <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
-                            disabled={pageIndex === 0}
-                            >
-                            <span className="sr-only">Go to first page</span>
-                            <ChevronsLeft className="h-4 w-4" />
-                            </Button>
-                            <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
-                            disabled={pageIndex === 0}
-                            >
-                            <span className="sr-only">Go to previous page</span>
-                            <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
-                            disabled={pageIndex + 1 >= pageCount}
-                            >
-                            <span className="sr-only">Go to next page</span>
-                            <ChevronRight className="h-4 w-4" />
-                            </Button>
-                            <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
-                            disabled={pageIndex + 1 >= pageCount}
-                            >
-                            <span className="sr-only">Go to last page</span>
-                            <ChevronsRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {deleteCandidate && (
+                 <AlertDialog open={!!deleteCandidate} onOpenChange={(open) => !open && setDeleteCandidate(null)}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the candidate "{deleteCandidate.name}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDeleteCandidate(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <PageContent />
         </>
     );
 }
