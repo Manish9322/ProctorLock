@@ -82,9 +82,9 @@ function ExaminerSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
         <SidebarFooter>
           <SidebarMenu>
              <SidebarMenuItem>
-                <SidebarMenuButton onClick={toggleSidebar}>
+                <SidebarMenuButton tooltip="Collapse">
                     <SidebarTrigger />
-                    <span>Collapse</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
