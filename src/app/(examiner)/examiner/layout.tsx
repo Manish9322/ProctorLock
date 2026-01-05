@@ -16,10 +16,10 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, User, Video, Settings, LogOut } from 'lucide-react';
+import { Home, User, Video, Settings, LogOut, Sun, Moon } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { useTheme } from 'next-themes';
 import { LogoutConfirmationDialog } from '@/components/logout-confirmation-dialog';
 
 
@@ -32,6 +32,12 @@ const navItems = [
 function ExaminerSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
     const pathname = usePathname();
     const { toggleSidebar } = useSidebar();
+    const { theme, setTheme } = useTheme();
+
+    const toggleTheme = () => {
+        setTheme(theme === 'light' ? 'dark' : 'light');
+    }
+
     return (
         <Sidebar collapsible="icon">
         <SidebarHeader>
@@ -98,14 +104,14 @@ function ExaminerSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
                   <span>Log Out</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem className="mt-4">
-                  <div className="flex items-center justify-center group-data-[collapsible=icon]:hidden">
-                      <ThemeToggle />
-                  </div>
-                  <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center">
-                       <ThemeToggle />
-                  </div>
-              </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton onClick={toggleTheme} tooltip="Toggle Theme">
+                    <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only group-data-[collapsible=icon]:hidden">Toggle Theme</span>
+                    <span className="group-data-[collapsible=icon]:hidden">Toggle Theme</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
