@@ -86,132 +86,137 @@ const candidatesData: Candidate[] = [
   { id: 'user15', name: 'Olivia Clark', email: 'olivia.c@example.com', phoneNumber: '617-181-920', timezone: 'America/Chicago', role: 'Professional', college: 'Brown University', govIdType: 'Driver\'s License', govIdNumber: 'O9090909', examId: 'MA203-MIDTERM', status: 'In Progress', score: 79 },
 ];
 
-const ViewDetailsModal = ({ candidate, open, onOpenChange }: { candidate: Candidate | null, open: boolean, onOpenChange: (open: boolean) => void }) => {
-    if (!candidate) return null;
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Candidate Details</DialogTitle>
-                    <DialogDescription>Full information for {candidate.name}.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4 text-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground text-xs">Full Name</p>
-                                <p className="font-medium">{candidate.name}</p>
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground text-xs">Role</p>
-                                <p className="font-medium">{candidate.role}</p>
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                             <div>
-                                <p className="text-muted-foreground text-xs">Email</p>
-                                <p className="font-medium">{candidate.email}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground text-xs">Phone</p>
-                                <p className="font-medium">{candidate.phoneNumber}</p>
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                             <div>
-                                <p className="text-muted-foreground text-xs">Organization / Institute</p>
-                                <p className="font-medium">{candidate.college}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Globe className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground text-xs">Timezone</p>
-                                <p className="font-medium">{candidate.timezone}</p>
-                            </div>
-                        </div>
-                    </div>
-                     <div className="border-t pt-4 mt-4">
-                        <h4 className="font-medium mb-2">Verification &amp; Exam Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <div className="flex items-center gap-3">
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-muted-foreground text-xs">{candidate.govIdType}</p>
-                                    <p className="font-medium">{candidate.govIdNumber}</p>
-                                </div>
-                            </div>
-                             <div className="flex items-center gap-3">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                 <div>
-                                    <p className="text-muted-foreground text-xs">Exam ID</p>
-                                    <p className="font-medium">{candidate.examId}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-muted-foreground" />
-                                    <span>Status:</span>
-                                    <Badge variant={
-                                        candidate.status === 'Flagged' ? 'destructive'
-                                        : candidate.status === 'Finished' ? 'secondary'
-                                        : candidate.status === 'In Progress' ? 'default'
-                                        : 'outline'
-                                    }>{candidate.status}</Badge>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const ResultModal = ({ candidate, open, onOpenChange }: { candidate: Candidate | null, open: boolean, onOpenChange: (open: boolean) => void }) => {
+const CandidateModal = ({
+    modalState,
+    onOpenChange,
+}: {
+    modalState: { type: 'view' | 'result' | null; candidate: Candidate | null };
+    onOpenChange: (open: boolean) => void;
+}) => {
+    const { type, candidate } = modalState;
     if (!candidate) return null;
 
     const getScoreColor = (score: number) => {
         if (score < 60) return "text-destructive";
         if (score < 80) return "text-amber-500";
         return "text-green-500";
-    }
+    };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><Award className="h-5 w-5" /> Exam Result</DialogTitle>
-                    <DialogDescription>Result for {candidate.name} on exam {candidate.examId}.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                {candidate.status !== 'Finished' ? (
-                     <div className="text-center text-muted-foreground">
-                        <p>This exam is not yet finished.</p>
-                        <p>Result will be available once the candidate completes the exam.</p>
-                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="text-center">
-                            <p className="text-sm text-muted-foreground">Final Score</p>
-                            <p className={`text-6xl font-bold ${getScoreColor(candidate.score)}`}>{candidate.score}<span className="text-2xl text-muted-foreground">/100</span></p>
+        <Dialog open={!!type} onOpenChange={onOpenChange}>
+            <DialogContent className={type === 'view' ? "sm:max-w-xl" : "sm:max-w-md"}>
+                {type === 'view' && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Candidate Details</DialogTitle>
+                            <DialogDescription>Full information for {candidate.name}.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4 text-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Full Name</p>
+                                        <p className="font-medium">{candidate.name}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Role</p>
+                                        <p className="font-medium">{candidate.role}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Email</p>
+                                        <p className="font-medium">{candidate.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Phone</p>
+                                        <p className="font-medium">{candidate.phoneNumber}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Organization / Institute</p>
+                                        <p className="font-medium">{candidate.college}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Globe className="h-4 w-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Timezone</p>
+                                        <p className="font-medium">{candidate.timezone}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="border-t pt-4 mt-4">
+                                <h4 className="font-medium mb-2">Verification &amp; Exam Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">{candidate.govIdType}</p>
+                                            <p className="font-medium">{candidate.govIdNumber}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Exam ID</p>
+                                            <p className="font-medium">{candidate.examId}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-muted-foreground" />
+                                            <span>Status:</span>
+                                            <Badge variant={
+                                                candidate.status === 'Flagged' ? 'destructive'
+                                                : candidate.status === 'Finished' ? 'secondary'
+                                                : candidate.status === 'In Progress' ? 'default'
+                                                : 'outline'
+                                            }>{candidate.status}</Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                             <Progress value={candidate.score} />
-                             <p className="text-center text-sm font-medium">{candidate.score >= 60 ? 'Passed' : 'Failed'}</p>
+                    </>
+                )}
+                {type === 'result' && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2"><Award className="h-5 w-5" /> Exam Result</DialogTitle>
+                            <DialogDescription>Result for {candidate.name} on exam {candidate.examId}.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            {candidate.status !== 'Finished' ? (
+                                <div className="text-center text-muted-foreground">
+                                    <p>This exam is not yet finished.</p>
+                                    <p>Result will be available once the candidate completes the exam.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="text-center">
+                                        <p className="text-sm text-muted-foreground">Final Score</p>
+                                        <p className={`text-6xl font-bold ${getScoreColor(candidate.score)}`}>{candidate.score}<span className="text-2xl text-muted-foreground">/100</span></p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Progress value={candidate.score} />
+                                        <p className="text-center text-sm font-medium">{candidate.score >= 60 ? 'Passed' : 'Failed'}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    </div>
-                 )}
-                </div>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     );
@@ -460,8 +465,7 @@ export default function CandidatesPage() {
 
     return (
         <>
-            <ViewDetailsModal candidate={modalState.candidate} open={modalState.type === 'view'} onOpenChange={handleCloseModal} />
-            <ResultModal candidate={modalState.candidate} open={modalState.type === 'result'} onOpenChange={handleCloseModal} />
+            <CandidateModal modalState={modalState} onOpenChange={(open) => !open && handleCloseModal()} />
             <div className="space-y-4">
                 <div>
                     <h1 className="text-2xl font-bold">Candidates</h1>
@@ -647,4 +651,3 @@ export default function CandidatesPage() {
         </>
     );
 }
-    
