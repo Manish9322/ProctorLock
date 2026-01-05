@@ -41,19 +41,62 @@ type Candidate = {
   name: string;
   examId: string;
   status: 'Finished' | 'Flagged' | 'In Progress' | 'Not Started';
+  college: string;
+  role: string;
+  phoneNumber: string;
 };
 
 const candidatesData: Candidate[] = [
-  { id: 'user1', name: 'Alice Johnson', examId: 'CS101-FINAL', status: 'Finished' },
-  { id: 'user2', name: 'Bob Williams', examId: 'MA203-MIDTERM', status: 'Flagged' },
-  { id: 'user3', name: 'Charlie Brown', examId: 'PHY201-QUIZ3', status: 'In Progress' },
-  { id: 'user4', name: 'Diana Miller', examId: 'CS101-FINAL', status: 'Finished' },
-  { id: 'user5', name: 'Eve Davis', examId: 'BIO-101', status: 'Not Started' },
-  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished' },
-  { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress' },
-  { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged' },
-  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started' },
-  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished' },
+  {
+    id: 'user1',
+    name: 'Alice Johnson',
+    examId: 'CS101-FINAL',
+    status: 'Finished',
+    college: 'Stanford University',
+    role: 'Student',
+    phoneNumber: '123-456-7890',
+  },
+  {
+    id: 'user2',
+    name: 'Bob Williams',
+    examId: 'MA203-MIDTERM',
+    status: 'Flagged',
+    college: 'MIT',
+    role: 'Student',
+    phoneNumber: '234-567-8901',
+  },
+  {
+    id: 'user3',
+    name: 'Charlie Brown',
+    examId: 'PHY201-QUIZ3',
+    status: 'In Progress',
+    college: 'Harvard University',
+    role: 'Professional',
+    phoneNumber: '345-678-9012',
+  },
+  {
+    id: 'user4',
+    name: 'Diana Miller',
+    examId: 'CS101-FINAL',
+    status: 'Finished',
+    college: 'UC Berkeley',
+    role: 'Student',
+    phoneNumber: '456-789-0123',
+  },
+  {
+    id: 'user5',
+    name: 'Eve Davis',
+    examId: 'BIO-101',
+    status: 'Not Started',
+    college: 'Yale University',
+    role: 'Student',
+    phoneNumber: '567-890-1234',
+  },
+  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished', college: 'Princeton University', role: 'Professional', phoneNumber: '678-901-2345' },
+  { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress', college: 'Columbia University', role: 'Student', phoneNumber: '789-012-3456' },
+  { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged', college: 'University of Chicago', role: 'Student', phoneNumber: '890-123-4567' },
+  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started', college: 'Duke University', role: 'Professional', phoneNumber: '901-234-5678' },
+  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished', college: 'Northwestern University', role: 'Student', phoneNumber: '012-345-6789' },
 ];
 
 interface DataTableColumnDef<TData> {
@@ -73,6 +116,27 @@ const columns: DataTableColumnDef<Candidate>[] = [
             sortable: true,
         },
         cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    },
+    {
+        accessorKey: 'college',
+        header: {
+            title: 'College/Institute',
+            sortable: true,
+        },
+    },
+     {
+        accessorKey: 'role',
+        header: {
+            title: 'Role',
+            sortable: true,
+        },
+    },
+     {
+        accessorKey: 'phoneNumber',
+        header: {
+            title: 'Phone Number',
+            sortable: false,
+        },
     },
     {
         accessorKey: 'examId',
@@ -141,7 +205,7 @@ export default function ExaminerCandidatesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
-    const searchableColumns: (keyof Candidate)[] = ['name', 'examId'];
+    const searchableColumns: (keyof Candidate)[] = ['name', 'examId', 'college', 'role'];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
