@@ -60,6 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '../ui/checkbox';
+import { RadioGroup } from '../ui/radio-group';
 
 const steps = [
   { id: 'details', name: 'Test Details', icon: FileText },
@@ -396,7 +397,7 @@ function QuestionDialog({
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id={`correct-${index}`}
-                        checked={correctAnswer === option}
+                        checked={correctAnswer === option && option !== ''}
                         onCheckedChange={() => setCorrectAnswer(option)}
                       />
                       <Label htmlFor={`correct-${index}`}>Correct</Label>
