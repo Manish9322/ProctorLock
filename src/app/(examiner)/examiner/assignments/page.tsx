@@ -32,6 +32,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
 
 type AssignmentStatus = 'Assigned' | 'Pending' | 'Completed' | 'Flagged';
 
