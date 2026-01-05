@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newUser = { name, role };
     setUser(newUser);
     if (role === 'candidate') {
-      router.push('/candidate/dashboard');
+      router.push('/dashboard');
     } else if (role === 'examiner') {
       router.push('/examiner/dashboard');
     } else if (role === 'admin') {

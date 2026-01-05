@@ -154,7 +154,7 @@ export function ExamSession({ examId }: { examId: string }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => (window.location.href = '/candidate/dashboard')}>
+            <AlertDialogAction onClick={() => (window.location.href = '/dashboard')}>
               Return to Dashboard
             </AlertDialogAction>
           </AlertDialogFooter>

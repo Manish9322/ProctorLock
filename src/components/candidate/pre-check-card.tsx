@@ -133,7 +133,7 @@ export function PreCheckCard({ examId }: { examId: string }) {
     // In a real app, you would store this in your database
 
     // 3. Redirect to exam
-    router.push(`/candidate/exam/${examId}`);
+    router.push(`/exam/${examId}`);
   }
 
 
