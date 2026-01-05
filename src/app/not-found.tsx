@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { SearchX } from 'lucide-react';
 import { Icons } from '@/components/icons';
+import { AlertTriangle } from 'lucide-react';
 
 export default function NotFound() {
   return (
@@ -11,7 +11,7 @@ export default function NotFound() {
         <span>ProctorLock</span>
       </div>
       <div className="flex flex-col items-center gap-4">
-        <SearchX className="h-24 w-24 text-muted-foreground/50" strokeWidth={1} />
+        <AlertTriangle className="h-24 w-24 text-destructive/50" strokeWidth={1} />
         <h1 className="text-8xl font-bold tracking-tighter text-primary">404</h1>
         <div className="max-w-md">
             <h2 className="text-2xl font-semibold tracking-tight">Page Not Found</h2>
