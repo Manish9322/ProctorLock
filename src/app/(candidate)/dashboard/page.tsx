@@ -121,10 +121,13 @@ export default function CandidateDashboard() {
 
   return (
     <DashboardLayout allowedRoles={['candidate']}>
-      <div className="flex items-center justify-between space-y-2">
+      <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">My Exams</h1>
+        <p className="text-muted-foreground">
+            Here are your scheduled, live, and completed exams.
+        </p>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pt-4">
         {examsData.map((exam) => (
           <Card key={exam.id} className="flex flex-col">
             <CardHeader>
