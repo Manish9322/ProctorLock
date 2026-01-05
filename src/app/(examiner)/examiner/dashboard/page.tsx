@@ -38,6 +38,9 @@ const recentAlerts = [
     { id: 'alert1', candidate: 'Bob Williams', event: 'Exited fullscreen', timestamp: '2m ago' },
     { id: 'alert2', candidate: 'Alice Johnson', event: 'Tab hidden', timestamp: '5m ago' },
     { id: 'alert3', candidate: 'Charlie Brown', event: 'Pasted content', timestamp: '8m ago' },
+    { id: 'alert4', candidate: 'Diana Miller', event: 'Exited fullscreen', timestamp: '10m ago' },
+    { id: 'alert5', candidate: 'Eve Davis', event: 'Pasted content', timestamp: '11m ago' },
+    { id: 'alert6', candidate: 'Frank White', event: 'Tab hidden', timestamp: '15m ago' },
 ]
 
 export default function ExaminerDashboardPage() {
@@ -160,7 +163,7 @@ export default function ExaminerDashboardPage() {
                     </CardHeader>
                      <CardContent>
                          <ul className="space-y-4">
-                            {recentAlerts.map((log) => (
+                            {recentAlerts.slice(0, 5).map((log) => (
                                 <li key={log.id} className="flex items-start gap-3 text-sm">
                                     <div className="flex-shrink-0">
                                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
