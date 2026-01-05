@@ -32,14 +32,20 @@ const CheckItem = ({
     title,
     status,
     children,
+    className,
 }:{
     icon: React.ElementType;
     title: string;
     status: 'pending' | 'success' | 'error';
     children: React.ReactNode;
+    className?: string;
 }) => {
     return (
-        <div className={`p-4 rounded-md flex items-center gap-4 border ${status === 'success' ? 'border-green-200 dark:border-green-800' : status === 'error' ? 'border-destructive/50' : ''}`}>
+        <div className={cn(
+            `p-4 rounded-md flex items-center gap-4 border`,
+            status === 'success' ? 'border-green-200 dark:border-green-800' : status === 'error' ? 'border-destructive/50' : '',
+            className
+        )}>
             <Icon className="h-6 w-6"/>
             <div>
                 <h3 className="font-semibold">{title}</h3>
@@ -216,17 +222,17 @@ export function PreCheckCard({ examId }: { examId: string }) {
 
             {/* Right Column - Checks */}
             <div className="lg:col-span-2 flex flex-col gap-4">
-                <CheckItem icon={Camera} title="Webcam" status={webcamStatus}>
+                <CheckItem icon={Camera} title="Webcam" status={webcamStatus} className="flex-grow">
                     {webcamStatus === 'pending' && 'Waiting...'}
                     {webcamStatus === 'success' && 'Ready'}
                     {webcamStatus === 'error' && 'Not detected'}
                 </CheckItem>
-                <CheckItem icon={Mic} title="Microphone" status={micStatus}>
+                <CheckItem icon={Mic} title="Microphone" status={micStatus} className="flex-grow">
                     {micStatus === 'pending' && 'Waiting...'}
                     {micStatus === 'success' && 'Ready'}
                     {micStatus === 'error' && 'Not detected'}
                 </CheckItem>
-                 <CheckItem icon={Signal} title="Network & Speed" status={networkStatus}>
+                 <CheckItem icon={Signal} title="Network & Speed" status={networkStatus} className="flex-grow">
                     {networkStatus === 'pending' && 'Waiting...'}
                     {networkStatus === 'success' && `Connection is stable ${downloadSpeed ? `(${downloadSpeed.toFixed(2)} Mbps)`: ''}`}
                     {networkStatus === 'error' && `Connection is unstable ${downloadSpeed ? `(${downloadSpeed.toFixed(2)} Mbps)`: ''}`}
@@ -258,21 +264,21 @@ export function PreCheckCard({ examId }: { examId: string }) {
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
-                    <div className="flex flex-col sm:flex-row justify-end gap-2 w-full mt-auto">
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 w-full mt-auto flex-grow">
                         {webcamStatus === 'pending' || micStatus === 'pending' || networkStatus === 'pending' ? (
-                            <Button onClick={startChecks} disabled={isChecking} className="w-full sm:w-auto">
+                            <Button onClick={startChecks} disabled={isChecking} className="w-full sm:w-auto flex-grow">
                                 {isChecking ? 'Checking...' : 'Start System Check'}
                             </Button>
                         ) : null}
                         {webcamStatus === 'error' || micStatus === 'error' || networkStatus === 'error' ? (
-                            <Button onClick={startChecks} disabled={isChecking} className="w-full sm:w-auto">
+                            <Button onClick={startChecks} disabled={isChecking} className="w-full sm:w-auto flex-grow">
                                 {isChecking ? 'Retrying...' : 'Retry Checks'}
                             </Button>
                         ) : null}
                         <Button
                             onClick={handleProceed}
                             disabled={!allChecksPassed || isChecking}
-                            className="w-full sm:w-auto"
+                            className="w-full sm:w-auto flex-grow"
                         >
                             Proceed to Exam
                         </Button>
