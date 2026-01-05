@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,13 +27,35 @@ import {
     Search,
     School,
     Book,
-    Briefcase
+    Briefcase,
+    PlusCircle,
+    Trash,
+    Edit
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { registrationOptions } from '@/lib/config-data';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
 
 type College = {
   id: string;
@@ -45,78 +67,93 @@ type College = {
 
 const collegesData: College[] = registrationOptions.colleges;
 
-interface DataTableColumnDef<TData> {
-    accessorKey: keyof TData | 'actions';
-    header: {
-      title: string;
-      sortable?: boolean;
-    };
-    cell?: (props: { row: { getValue: (key: string) => any } }) => React.ReactNode;
-}
+const CollegeModal = ({
+    modalState,
+    onOpenChange,
+    onSave,
+}: {
+    modalState: { type: 'add' | 'edit' | null; college: College | null };
+    onOpenChange: (open: boolean) => void;
+    onSave: (college: Omit<College, 'id' | 'registrations'>) => void;
+}) => {
+    const { type, college } = modalState;
+    const [name, setName] = useState(college?.name || '');
+    const [collegeType, setCollegeType] = useState<College['type'] | ''>(college?.type || '');
+    const [location, setLocation] = useState(college?.location || '');
 
-const columns: DataTableColumnDef<College>[] = [
-    {
-        accessorKey: 'name',
-        header: {
-            title: 'Name',
-            sortable: true,
-        },
-        cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
-    },
-    {
-        accessorKey: 'type',
-        header: {
-            title: 'Type',
-            sortable: true,
-        },
-    },
-    {
-        accessorKey: 'location',
-        header: {
-            title: 'Location',
-            sortable: true,
-        },
-    },
-     {
-        accessorKey: 'registrations',
-        header: {
-            title: 'Registrations',
-            sortable: true,
-        },
-        cell: ({ row }) => <div className="text-center">{row.getValue('registrations')}</div>
-    },
-    {
-        accessorKey: 'actions',
-        header: {
-            title: 'Actions',
-        },
-        cell: () => (
-            <div className="text-right">
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Toggle menu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                    Delete
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-        ),
-    },
-];
+    React.useEffect(() => {
+        if (type === 'edit' && college) {
+            setName(college.name);
+            setCollegeType(college.type);
+            setLocation(college.location);
+        } else {
+            setName('');
+            setCollegeType('');
+            setLocation('');
+        }
+    }, [type, college]);
+    
+    const handleSave = () => {
+        if (name && collegeType && location) {
+            onSave({ name, type: collegeType as College['type'], location });
+        }
+    };
+    
+    if (!type) return null;
+    
+    const isEdit = type === 'edit';
+
+    return (
+         <Dialog open={!!type} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{isEdit ? 'Edit' : 'Add'} College</DialogTitle>
+                    <DialogDescription>
+                        {isEdit ? 'Update the details for this entry.' : 'Add a new college, institute, or organization.'}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Stanford University" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="type">Type</Label>
+                        <Select value={collegeType} onValueChange={(value) => setCollegeType(value as College['type'])}>
+                            <SelectTrigger id="type">
+                                <SelectValue placeholder="Select a type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="University">University</SelectItem>
+                                <SelectItem value="Organization">Organization</SelectItem>
+                                <SelectItem value="Institute">Institute</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Stanford, CA" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave}>{isEdit ? 'Save Changes' : 'Add College'}</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function CollegesPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    // Modal states
+    const [modalState, setModalState] = useState<{ type: 'add' | 'edit' | null; college: College | null }>({ type: null, college: null });
+    const [deleteCollege, setDeleteCollege] = useState<College | null>(null);
+
+    // Search params
     const page = searchParams.get('page') ?? '1';
     const pageSize = searchParams.get('pageSize') ?? '5';
     const searchTerm = searchParams.get('search') ?? '';
@@ -128,6 +165,106 @@ export default function CollegesPage() {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
     const searchableColumns: (keyof College)[] = ['name', 'type', 'location'];
+
+    const handleOpenModal = (type: 'add' | 'edit', college: College | null = null) => {
+        setModalState({ type, college });
+    };
+
+    const handleCloseModal = () => {
+        setModalState({ type: null, college: null });
+    };
+
+    const handleSaveCollege = (collegeData: Omit<College, 'id' | 'registrations'>) => {
+        if (modalState.type === 'edit' && modalState.college) {
+            console.log('Updating college:', modalState.college.id, collegeData);
+        } else {
+            console.log('Adding new college:', collegeData);
+        }
+        handleCloseModal();
+    }
+
+    const handleDeleteClick = (college: College) => {
+        setDeleteCollege(college);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (deleteCollege) {
+            console.log(`Deleting college ${deleteCollege.id}`);
+            setDeleteCollege(null);
+        }
+    };
+
+
+    interface DataTableColumnDef<TData> {
+        accessorKey: keyof TData | 'actions';
+        header: {
+          title: string;
+          sortable?: boolean;
+        };
+        cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
+    }
+
+    const columns: DataTableColumnDef<College>[] = [
+        {
+            accessorKey: 'name',
+            header: {
+                title: 'Name',
+                sortable: true,
+            },
+            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+        },
+        {
+            accessorKey: 'type',
+            header: {
+                title: 'Type',
+                sortable: true,
+            },
+        },
+        {
+            accessorKey: 'location',
+            header: {
+                title: 'Location',
+                sortable: true,
+            },
+        },
+         {
+            accessorKey: 'registrations',
+            header: {
+                title: 'Registrations',
+                sortable: true,
+            },
+            cell: ({ row }) => <div className="text-center">{row.getValue('registrations')}</div>
+        },
+        {
+            accessorKey: 'actions',
+            header: {
+                title: 'Actions',
+            },
+            cell: ({ row }) => (
+                <div className="text-right">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleOpenModal('edit', row.original)}>
+                            <Edit className="mr-2 h-4 w-4"/>
+                            Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(row.original)}>
+                            <Trash className="mr-2 h-4 w-4"/>
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ),
+        },
+    ];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
@@ -237,7 +374,7 @@ export default function CollegesPage() {
         router.push(`${pathname}?${createQueryString({ sort: newSort, page: '1' })}`);
     };
 
-    return (
+    const PageContent = () => (
         <div className="space-y-4">
              <div className="flex items-center justify-between">
                 <div>
@@ -246,7 +383,10 @@ export default function CollegesPage() {
                     Manage colleges, institutes, and organizations.
                 </p>
                 </div>
-                <Button>Add New</Button>
+                <Button onClick={() => handleOpenModal('add')}>
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Add New
+                </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -333,12 +473,12 @@ export default function CollegesPage() {
                                 </TableRow>
                             ))
                         ) : data.length > 0 ? (
-                        data.map((row, index) => (
-                            <TableRow key={index}>
+                        data.map((row) => (
+                            <TableRow key={row.id}>
                             {columns.map((column) => (
                                 <TableCell key={String(column.accessorKey)}>
                                 {column.cell
-                                    ? column.cell({ row: { getValue: (key) => (row as any)[key] } })
+                                    ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
                                     : (row as any)[column.accessorKey]}
                                 </TableCell>
                             ))}
@@ -424,4 +564,33 @@ export default function CollegesPage() {
             </div>
         </div>
     );
+
+    return (
+        <>
+            <CollegeModal
+                modalState={modalState}
+                onOpenChange={(open) => !open && handleCloseModal()}
+                onSave={handleSaveCollege}
+            />
+            {deleteCollege && (
+                <AlertDialog open={!!deleteCollege} onOpenChange={(open) => !open && setDeleteCollege(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the entry for "{deleteCollege.name}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeleteCollege(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <PageContent />
+        </>
+    )
 }
+
+    
