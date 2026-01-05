@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +55,7 @@ interface DataTableColumnDef<TData> {
       title: string;
       sortable?: boolean;
     };
-    cell?: (props: { row: { getValue: (key: string) => any } }) => React.ReactNode;
+    cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
 }
 
 const columns: DataTableColumnDef<Test>[] = [
@@ -108,7 +108,7 @@ const columns: DataTableColumnDef<Test>[] = [
   {
     accessorKey: 'actions',
     header: { title: 'Actions' },
-    cell: () => (
+    cell: ({ row }) => (
       <div className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -119,7 +119,12 @@ const columns: DataTableColumnDef<Test>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>
+                <Link href={`/examiner/tests/edit/${row.original.id}`} className="flex w-full items-center"><Edit className="mr-2 h-4 w-4" /> Edit</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+                <Link href={`/examiner/tests/${row.original.id}/assign`} className="flex w-full items-center"><UserPlus className="mr-2 h-4 w-4" /> Assign Candidates</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>View Results</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
               Delete
@@ -366,7 +371,7 @@ export default function TestsPage() {
                             {columns.map((column) => (
                                 <TableCell key={String(column.accessorKey)}>
                                 {column.cell
-                                    ? column.cell({ row: { getValue: (key) => (row as any)[key] } })
+                                    ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
                                     : (row as any)[column.accessorKey]}
                                 </TableCell>
                             ))}

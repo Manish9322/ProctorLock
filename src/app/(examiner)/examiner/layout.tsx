@@ -16,7 +16,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { Home, User, Video, Settings, LogOut, Sun, Moon, FileText } from 'lucide-react';
+import { Home, User, Video, Settings, LogOut, Sun, Moon, FileText, UserPlus } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -26,6 +26,7 @@ import { LogoutConfirmationDialog } from '@/components/logout-confirmation-dialo
 const navItems = [
   { href: '/examiner/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/examiner/tests', icon: FileText, label: 'Tests' },
+  { href: '/examiner/assignments', icon: UserPlus, label: 'Assignments' },
   { href: '/examiner/sessions', icon: Video, label: 'Live Sessions' },
   { href: '/examiner/candidates', icon: User, label: 'Candidates' },
 ];
@@ -83,7 +84,7 @@ function ExaminerSidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse">
-                <SidebarTrigger />
+                <SidebarTrigger/>
                 <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
