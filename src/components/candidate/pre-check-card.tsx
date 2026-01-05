@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, Camera, Mic, AlertTriangle, Info, CheckSquare } from 'lucide-react';
+import { CheckCircle2, XCircle, Camera, Mic, AlertTriangle, Info, CheckSquare, Signal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
@@ -34,20 +34,41 @@ export function PreCheckCard({ examId }: { examId: string }) {
   
   const [webcamStatus, setWebcamStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [micStatus, setMicStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [networkStatus, setNetworkStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [consentGiven, setConsentGiven] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const checkNetworkStatus = () => {
+    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (connection && connection.downlink) {
+        if (connection.downlink >= 1) { // 1 Mbps threshold
+            setNetworkStatus('success');
+        } else {
+            setNetworkStatus('error');
+            throw new Error('Your network speed is too slow for a stable exam experience. Please find a better connection.');
+        }
+    } else {
+        // If the API is not supported, we can't block the user.
+        // We'll pass this check but could optionally show a warning.
+        setNetworkStatus('success');
+        toast({
+            title: 'Network Check',
+            description: 'Could not automatically determine network speed. Please ensure you have a stable connection.',
+        });
+    }
+  }
 
   const startChecks = async () => {
     setIsChecking(true);
     setError(null);
     try {
+      // Media devices check
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
 
-      // Webcam check
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setWebcamStatus('success');
@@ -55,7 +76,6 @@ export function PreCheckCard({ examId }: { examId: string }) {
         throw new Error('Video element not found.');
       }
       
-      // Mic check
       if (stream.getAudioTracks().length > 0) {
         setMicStatus('success');
       } else {
@@ -63,24 +83,29 @@ export function PreCheckCard({ examId }: { examId: string }) {
         throw new Error('No audio tracks found.');
       }
       
+      // Network check
+      checkNetworkStatus();
+      
     } catch (err) {
-      console.error('Error accessing media devices.', err);
+      console.error('Error during system checks.', err);
       let message = 'An unknown error occurred.';
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
           message = 'Permission to access webcam and microphone was denied. Please allow access in your browser settings.';
+           setWebcamStatus('error');
+           setMicStatus('error');
         } else if (err.name === 'NotFoundError') {
           message = 'No webcam or microphone was found. Please ensure they are connected and enabled.';
+          setWebcamStatus('error');
+          setMicStatus('error');
         } else {
           message = err.message;
         }
       }
       setError(message);
-      setWebcamStatus('error');
-      setMicStatus('error');
       toast({
         variant: 'destructive',
-        title: 'Hardware Check Failed',
+        title: 'System Check Failed',
         description: message,
       });
     } finally {
@@ -137,7 +162,7 @@ export function PreCheckCard({ examId }: { examId: string }) {
   }
 
 
-  const allChecksPassed = webcamStatus === 'success' && micStatus === 'success' && consentGiven;
+  const allChecksPassed = webcamStatus === 'success' && micStatus === 'success' && networkStatus === 'success' && consentGiven;
 
   return (
     <Card className="w-full max-w-6xl">
@@ -203,6 +228,19 @@ export function PreCheckCard({ examId }: { examId: string }) {
                     {micStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
                     {micStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
                 </div>
+                <div className={`p-4 rounded-md flex items-center gap-4 border ${networkStatus === 'success' ? 'border-green-200 dark:border-green-800' : ''}`}>
+                    <Signal className="h-6 w-6"/>
+                    <div>
+                        <h3 className="font-semibold">Network & Speed</h3>
+                        <p className="text-sm text-muted-foreground">
+                            {networkStatus === 'pending' && 'Waiting...'}
+                            {networkStatus === 'success' && 'Connection is stable'}
+                            {networkStatus === 'error' && 'Connection is unstable'}
+                        </p>
+                    </div>
+                    {networkStatus === 'success' && <CheckCircle2 className="ml-auto h-5 w-5 text-green-600"/>}
+                    {networkStatus === 'error' && <XCircle className="ml-auto h-5 w-5 text-destructive"/>}
+                </div>
             </div>
 
             <div className={`p-4 rounded-md flex items-start gap-4 border ${consentGiven ? 'border-green-200 dark:border-green-800' : ''}`}>
@@ -226,7 +264,7 @@ export function PreCheckCard({ examId }: { examId: string }) {
                         {isChecking ? 'Checking...' : 'Start System Check'}
                     </Button>
                 ) : null}
-                {webcamStatus === 'error' || micStatus === 'error' ? (
+                {webcamStatus === 'error' || micStatus === 'error' || networkStatus === 'error' ? (
                     <Button onClick={startChecks} disabled={isChecking}>
                         {isChecking ? 'Checking...' : 'Retry Checks'}
                     </Button>
