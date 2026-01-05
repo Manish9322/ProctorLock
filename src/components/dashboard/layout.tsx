@@ -2,7 +2,6 @@
 import { useAuth, type Role } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { DashboardHeader } from './header';
 import { Skeleton } from '../ui/skeleton';
 
 export function DashboardLayout({
@@ -52,9 +51,14 @@ export function DashboardLayout({
     );
   }
 
+  // This component is now only used for the candidate dashboard
+  // Admin and Examiner have their own layouts with sidebars
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <DashboardHeader />
+      <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+         <h1 className="text-xl font-bold">ProctorLock</h1>
+         {/* <UserNav /> */}
+      </header>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         {children}
       </main>
