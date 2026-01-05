@@ -26,7 +26,8 @@ import {
     ChevronsLeft,
     ChevronsRight,
     Search,
-    Video,
+    Users,
+    CheckCircle,
     AlertTriangle,
     Clock,
 } from 'lucide-react';
@@ -35,22 +36,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
-type Session = {
+type Candidate = {
   id: string;
   name: string;
   examId: string;
-  status: 'Flagged' | 'In Progress';
+  status: 'Finished' | 'Flagged' | 'In Progress' | 'Not Started';
 };
 
-const sessionsData: Session[] = [
-  { id: 'user1', name: 'Alice Johnson', examId: 'CS101-FINAL', status: 'In Progress' },
+const candidatesData: Candidate[] = [
+  { id: 'user1', name: 'Alice Johnson', examId: 'CS101-FINAL', status: 'Finished' },
   { id: 'user2', name: 'Bob Williams', examId: 'MA203-MIDTERM', status: 'Flagged' },
   { id: 'user3', name: 'Charlie Brown', examId: 'PHY201-QUIZ3', status: 'In Progress' },
+  { id: 'user4', name: 'Diana Miller', examId: 'CS101-FINAL', status: 'Finished' },
+  { id: 'user5', name: 'Eve Davis', examId: 'BIO-101', status: 'Not Started' },
+  { id: 'user6', name: 'Frank White', examId: 'CS101-FINAL', status: 'Finished' },
   { id: 'user7', name: 'Grace Lee', examId: 'MA203-MIDTERM', status: 'In Progress' },
   { id: 'user8', name: 'Henry Scott', examId: 'PHY201-QUIZ3', status: 'Flagged' },
-  { id: 'user11', name: 'Kate Hill', examId: 'MA203-MIDTERM', status: 'In Progress' },
-  { id: 'user14', name: 'Noah Baker', examId: 'CS101-FINAL', status: 'Flagged' },
-  { id: 'user15', name: 'Olivia Clark', examId: 'MA203-MIDTERM', status: 'In Progress' },
+  { id: 'user9', name: 'Ivy Green', examId: 'BIO-101', status: 'Not Started' },
+  { id: 'user10', name: 'Jack King', examId: 'CS101-FINAL', status: 'Finished' },
 ];
 
 interface DataTableColumnDef<TData> {
@@ -62,7 +65,7 @@ interface DataTableColumnDef<TData> {
     cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
 }
 
-const columns: DataTableColumnDef<Session>[] = [
+const columns: DataTableColumnDef<Candidate>[] = [
     {
         accessorKey: 'name',
         header: {
@@ -74,7 +77,7 @@ const columns: DataTableColumnDef<Session>[] = [
     {
         accessorKey: 'examId',
         header: {
-            title: 'Exam',
+            title: 'Current Exam',
             sortable: true,
         },
     },
@@ -85,13 +88,17 @@ const columns: DataTableColumnDef<Session>[] = [
             sortable: true,
         },
         cell: ({ row }) => {
-            const status = row.getValue('status') as Session['status'];
+            const status = row.getValue('status') as Candidate['status'];
             return (
                 <Badge
                     variant={
                         status === 'Flagged'
                         ? 'destructive'
-                        : 'default'
+                        : status === 'Finished'
+                        ? 'secondary'
+                        : status === 'In Progress'
+                        ? 'default'
+                        : 'outline'
                     }
                     >
                     {status}
@@ -109,7 +116,7 @@ const columns: DataTableColumnDef<Session>[] = [
                 <Button asChild variant="ghost" size="icon">
                     <Link href={`/examiner/monitoring/${row.original.id}`}>
                         <ArrowRight className="h-4 w-4" />
-                        <span className="sr-only">Monitor Session</span>
+                        <span className="sr-only">Monitor Candidate</span>
                     </Link>
                 </Button>
             </div>
@@ -117,7 +124,7 @@ const columns: DataTableColumnDef<Session>[] = [
     },
 ];
 
-export default function ExaminerSessionsPage() {
+export default function ExaminerCandidatesPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -129,12 +136,12 @@ export default function ExaminerSessionsPage() {
     const sortParam = searchParams.get('sort');
 
     // Component state
-    const [data, setData] = React.useState<Session[]>([]);
+    const [data, setData] = React.useState<Candidate[]>([]);
     const [pageCount, setPageCount] = React.useState(0);
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
 
-    const searchableColumns: (keyof Session)[] = ['name', 'examId'];
+    const searchableColumns: (keyof Candidate)[] = ['name', 'examId'];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
@@ -162,10 +169,11 @@ export default function ExaminerSessionsPage() {
     }, [sortParam]);
 
     const stats = React.useMemo(() => {
-        const total = sessionsData.length;
-        const flagged = sessionsData.filter(c => c.status === 'Flagged').length;
-        const inProgress = sessionsData.filter(c => c.status === 'In Progress').length;
-        return { total, flagged, inProgress };
+        const total = candidatesData.length;
+        const finished = candidatesData.filter(c => c.status === 'Finished').length;
+        const flagged = candidatesData.filter(c => c.status === 'Flagged').length;
+        const inProgress = candidatesData.filter(c => c.status === 'In Progress').length;
+        return { total, finished, flagged, inProgress };
     }, []);
 
     // Debounce search term
@@ -185,21 +193,21 @@ export default function ExaminerSessionsPage() {
     }) => {
         await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
 
-        let filteredSessions = sessionsData;
+        let filteredCandidates = candidatesData;
 
         if (options.searchTerm) {
             const term = options.searchTerm.toLowerCase();
-            filteredSessions = sessionsData.filter(
-                (session) =>
+            filteredCandidates = candidatesData.filter(
+                (candidate) =>
                 searchableColumns.some(key =>
-                    String(session[key]).toLowerCase().includes(term)
+                    String(candidate[key]).toLowerCase().includes(term)
                 )
             );
         }
         
         if (options.sort) {
-            filteredSessions.sort((a, b) => {
-                const key = options.sort!.id as keyof Session;
+            filteredCandidates.sort((a, b) => {
+                const key = options.sort!.id as keyof Candidate;
                 if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
                 if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
                 return 0;
@@ -208,11 +216,11 @@ export default function ExaminerSessionsPage() {
         
         const start = options.pageIndex * options.pageSize;
         const end = start + options.pageSize;
-        const pageData = filteredSessions.slice(start, end);
+        const pageData = filteredCandidates.slice(start, end);
         
         return {
             data: pageData,
-            pageCount: Math.ceil(filteredSessions.length / options.pageSize),
+            pageCount: Math.ceil(filteredCandidates.length / options.pageSize),
         };
     }, []);
 
@@ -249,17 +257,17 @@ export default function ExaminerSessionsPage() {
     return (
         <div className="space-y-4">
             <div>
-                <h1 className="text-2xl font-bold">Live Sessions</h1>
+                <h1 className="text-2xl font-bold">Candidates</h1>
                 <p className="text-muted-foreground">
-                    View and manage all active proctoring sessions.
+                    View and manage all candidates for your exams.
                 </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Live Sessions</CardTitle>
-                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{stats.total}</div>
@@ -267,7 +275,16 @@ export default function ExaminerSessionsPage() {
                 </Card>
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Flagged Sessions</CardTitle>
+                    <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.finished}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Flagged</CardTitle>
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -276,7 +293,7 @@ export default function ExaminerSessionsPage() {
                 </Card>
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Smoothly In Progress</CardTitle>
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -366,7 +383,7 @@ export default function ExaminerSessionsPage() {
                             <SelectValue placeholder={pageSize} />
                             </SelectTrigger>
                             <SelectContent side="top">
-                            {[5, 10, 20].map((size) => (
+                            {[5, 10, 20, 50].map((size) => (
                                 <SelectItem key={size} value={`${size}`}>
                                 {size}
                                 </SelectItem>
