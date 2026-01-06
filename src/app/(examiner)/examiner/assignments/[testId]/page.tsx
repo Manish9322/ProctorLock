@@ -29,59 +29,52 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-
-type AssignmentStatus = 'Assigned' | 'Pending' | 'Completed' | 'Flagged';
-
-type AssignedCandidate = {
-  id: string;
-  name: string;
-  email: string;
-  testId: string;
-  status: AssignmentStatus;
-};
-
-const allCandidates = [
-    { value: 'user1', label: 'Alice Johnson (alice.j@example.com)' },
-    { value: 'user2', label: 'Bob Williams (bob.w@example.com)' },
-    { value: 'user3', label: 'Charlie Brown (charlie.b@example.com)' },
-    { value: 'user4', label: 'Diana Miller (diana.m@example.com)' },
-    { value: 'user5', label: 'Eve Davis (eve.d@example.com)' },
-];
-
-const assignedCandidatesData: AssignedCandidate[] = [
-  { id: 'user1', name: 'Alice Johnson', email: 'alice.j@example.com', testId: 'CS101-FINAL', status: 'Assigned' },
-  { id: 'user2', name: 'Bob Williams', email: 'bob.w@example.com', testId: 'CS101-FINAL', status: 'Completed' },
-];
+import { useGetCandidatesQuery, useGetAssignmentsForTestQuery, useAssignCandidateMutation, useUnassignCandidateMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import type { Assignment } from '@/models/assignment.model';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AssignmentsPage({ params }: { params: { testId: string } }) {
-    const [assignedCandidates, setAssignedCandidates] = useState(assignedCandidatesData);
+    const { testId } = params;
+    const { toast } = useToast();
+
+    // RTK Query Hooks
+    const { data: candidatesData = [], isLoading: isLoadingCandidates } = useGetCandidatesQuery({});
+    const { data: assignments = [], isLoading: isLoadingAssignments, refetch } = useGetAssignmentsForTestQuery(testId);
+    const [assignCandidate, { isLoading: isAssigning }] = useAssignCandidateMutation();
+    const [unassignCandidate, { isLoading: isUnassigning }] = useUnassignCandidateMutation();
+
     const [selectedCandidate, setSelectedCandidate] = useState('');
-    const [candidateToRemove, setCandidateToRemove] = useState<AssignedCandidate | null>(null);
+    const [candidateToRemove, setCandidateToRemove] = useState<Assignment | null>(null);
 
-    const handleAssignCandidate = () => {
-        const candidate = allCandidates.find(c => c.value === selectedCandidate);
-        if (candidate && !assignedCandidates.some(ac => ac.id === candidate.value)) {
-            const [name, email] = candidate.label.split(' (');
-            const newAssignment: AssignedCandidate = {
-                id: candidate.value,
-                name: name,
-                email: email.slice(0, -1),
-                testId: params.testId,
-                status: 'Assigned'
-            };
-            setAssignedCandidates([...assignedCandidates, newAssignment]);
+    const handleAssignCandidate = async () => {
+        if (!selectedCandidate) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a candidate to assign.' });
+            return;
+        }
+
+        try {
+            await assignCandidate({ testId, candidateId: selectedCandidate }).unwrap();
+            toast({ title: 'Success', description: 'Candidate assigned successfully.' });
             setSelectedCandidate('');
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: 'Assignment Failed', description: err.data?.message || 'Could not assign candidate.' });
         }
     };
 
-    const handleRemoveAssignment = () => {
+    const handleRemoveAssignment = async () => {
         if (candidateToRemove) {
-            setAssignedCandidates(assignedCandidates.filter(c => c.id !== candidateToRemove.id));
-            setCandidateToRemove(null);
+            try {
+                await unassignCandidate(candidateToRemove._id).unwrap();
+                toast({ title: 'Success', description: 'Assignment removed.' });
+                setCandidateToRemove(null);
+            } catch (err: any) {
+                toast({ variant: 'destructive', title: 'Error', description: err.data?.message || 'Could not remove assignment.' });
+            }
         }
     };
 
-    const getStatusVariant = (status: AssignmentStatus) => {
+    const getStatusVariant = (status: string) => {
         switch (status) {
             case 'Completed': return 'secondary';
             case 'Flagged': return 'destructive';
@@ -89,12 +82,20 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
         }
     }
 
+    const candidateOptions = React.useMemo(() => {
+        // Filter out candidates who are already assigned to this test
+        const assignedIds = new Set(assignments.map(a => a.candidate._id));
+        return candidatesData
+            .filter(c => !assignedIds.has(c._id))
+            .map(c => ({ value: c._id, label: `${c.name} (${c.email})` }));
+    }, [candidatesData, assignments]);
+
     return (
         <div className="space-y-4">
             <div>
                 <h1 className="text-2xl font-bold">Candidate Assignments</h1>
                 <p className="text-muted-foreground">
-                    Assign candidates to the test: <strong>{params.testId}</strong>
+                    Assign candidates to the test: <strong>{testId}</strong>
                 </p>
             </div>
 
@@ -108,15 +109,15 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
                         <Label>Assign Individually</Label>
                         <div className="flex gap-2">
                              <Combobox
-                                options={allCandidates}
+                                options={candidateOptions}
                                 value={selectedCandidate}
                                 onChange={setSelectedCandidate}
-                                placeholder="Search by name, email, or ID..."
+                                placeholder={isLoadingCandidates ? "Loading candidates..." : "Search by name, email..."}
                                 searchPlaceholder="Search candidates..."
                                 notFoundMessage="No candidate found."
                             />
-                            <Button onClick={handleAssignCandidate} disabled={!selectedCandidate}>
-                                <UserPlus className="mr-2 h-4 w-4" /> Assign
+                            <Button onClick={handleAssignCandidate} disabled={!selectedCandidate || isAssigning}>
+                                {isAssigning ? 'Assigning...' : <><UserPlus className="mr-2 h-4 w-4" /> Assign</>}
                             </Button>
                         </div>
                     </div>
@@ -129,7 +130,7 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
                             </Button>
                         </div>
                          <p className="text-xs text-muted-foreground">
-                            CSV must contain 'email' and 'name' columns. <a href="#" className="underline">Download template</a>.
+                            CSV must contain 'email' column. <a href="#" className="underline">Download template</a>.
                         </p>
                     </div>
                 </CardContent>
@@ -151,20 +152,29 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {assignedCandidates.length === 0 ? (
+                            {isLoadingAssignments ? (
+                                 Array.from({ length: 3 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : assignments.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="h-24 text-center">No candidates assigned yet.</TableCell>
                                 </TableRow>
                             ) : (
-                                assignedCandidates.map((candidate) => (
-                                    <TableRow key={candidate.id}>
-                                        <TableCell className="font-medium">{candidate.name}</TableCell>
-                                        <TableCell>{candidate.email}</TableCell>
+                                assignments.map((assignment) => (
+                                    <TableRow key={assignment._id}>
+                                        <TableCell className="font-medium">{assignment.candidate.name}</TableCell>
+                                        <TableCell>{assignment.candidate.email}</TableCell>
                                         <TableCell>
-                                            <Badge variant={getStatusVariant(candidate.status)}>{candidate.status}</Badge>
+                                            <Badge variant={getStatusVariant(assignment.status)}>{assignment.status}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => setCandidateToRemove(candidate)}>
+                                            <Button variant="ghost" size="icon" onClick={() => setCandidateToRemove(assignment)}>
                                                 <Trash className="h-4 w-4 text-destructive" />
                                                 <span className="sr-only">Remove</span>
                                             </Button>
@@ -183,12 +193,14 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will un-assign <strong>{candidateToRemove.name}</strong> from this test. They will no longer be able to take it.
+                                This will un-assign <strong>{candidateToRemove.candidate.name}</strong> from this test. They will no longer be able to take it.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setCandidateToRemove(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleRemoveAssignment}>Remove Assignment</AlertDialogAction>
+                            <AlertDialogAction onClick={handleRemoveAssignment} disabled={isUnassigning}>
+                                {isUnassigning ? 'Removing...' : 'Remove Assignment'}
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -196,3 +208,5 @@ export default function AssignmentsPage({ params }: { params: { testId: string }
         </div>
     );
 }
+
+    

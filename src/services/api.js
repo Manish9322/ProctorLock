@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Tests', 'Questions'],
+  tagTypes: ['Tests', 'Questions', 'Candidates', 'Assignments'],
   endpoints: (builder) => ({
     checkDbConnection: builder.mutation({
       query: () => ({
@@ -32,7 +32,7 @@ export const api = createApi({
         method: 'PUT',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Tests', id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tests', id }, { type: 'Tests', id: 'LIST' }],
     }),
     deleteTest: builder.mutation({
         query: (id) => ({
@@ -78,7 +78,38 @@ export const api = createApi({
             method: 'DELETE',
         }),
         invalidatesTags: (result, error, id) => [{ type: 'Questions', id }, { type: 'Questions', id: 'LIST' }],
-    })
+    }),
+    getCandidates: builder.query({
+        query: () => 'candidates',
+        providesTags: (result) =>
+            result
+            ? [...result.map(({ _id }) => ({ type: 'Candidates', id: _id })), { type: 'Candidates', id: 'LIST' }]
+            : [{ type: 'Candidates', id: 'LIST' }],
+    }),
+    getAssignmentsForTest: builder.query({
+      query: (testId) => `assignments/${testId}`,
+       providesTags: (result, error, testId) => [{ type: 'Assignments', id: testId }],
+    }),
+    assignCandidate: builder.mutation({
+      query: ({ testId, candidateId }) => ({
+        url: 'assignments',
+        method: 'POST',
+        body: { test: testId, candidate: candidateId },
+      }),
+      invalidatesTags: (result, error, { testId }) => [{ type: 'Assignments', id: testId }],
+    }),
+    unassignCandidate: builder.mutation({
+      query: (assignmentId) => ({
+        url: `assignments/${assignmentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, assignmentId) => {
+        // We don't know the testId here, so we have to be less specific.
+        // A better approach would be returning the full object from the DELETE and using that.
+        // For now, just invalidate the general list for all tests.
+        return [{ type: 'Assignments' }];
+      },
+    }),
   }),
 });
 
@@ -93,4 +124,10 @@ export const {
     useUpdateQuestionMutation,
     useDeleteQuestionMutation,
     useCreateBulkQuestionsMutation,
+    useGetCandidatesQuery,
+    useGetAssignmentsForTestQuery,
+    useAssignCandidateMutation,
+    useUnassignCandidateMutation,
 } = api;
+
+    
