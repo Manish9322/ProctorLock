@@ -231,11 +231,13 @@ const QuestionNavigator = ({
 export const ExamSession = ({
   examId,
   onTerminate,
-  onInitiateSubmit
+  onInitiateSubmit,
+  stream
 }: {
   examId: string;
   onTerminate: (reason: string) => void;
   onInitiateSubmit: () => void;
+  stream: MediaStream | null;
 }) => {
   const router = useRouter();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -256,6 +258,12 @@ export const ExamSession = ({
   }, []);
   
   useEffect(() => {
+    if (stream && videoRef.current) {
+        videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         addLog({ type: 'focus', event: 'Exited fullscreen' });
@@ -266,22 +274,10 @@ export const ExamSession = ({
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    let stream: MediaStream;
-    const setupWebcam = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error(err);
-        terminateExam('Webcam access is required and was not available.');
-      }
-    };
-    setupWebcam();
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (stream) stream.getTracks().forEach(track => track.stop());
     };
   }, [addLog, terminateExam]);
 

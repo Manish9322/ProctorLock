@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Check, ShieldCheck, Video, CheckCircle2, AlertTriangle, FileQuestion, HelpCircle, CheckSquare, ChevronLeft } from 'lucide-react';
 import { ExamSession, type SubmissionDetails } from '@/components/candidate/exam-session';
 import { useToast } from '@/hooks/use-toast';
@@ -146,6 +147,7 @@ export default function ExamPage() {
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -177,16 +179,26 @@ export default function ExamPage() {
         }
     }
   }, [examId, searchParams]);
+  
+  useEffect(() => {
+    return () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+  }, [stream]);
 
   const handleStartExam = async () => {
     setError(null);
     if (containerRef.current) {
         try {
             await containerRef.current.requestFullscreen();
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setStream(mediaStream);
             setView('exam');
         } catch (err) {
-            console.error("Could not enter fullscreen mode:", err);
-            setError("Fullscreen mode is required to start the exam. Please allow it and try again.");
+            console.error("Could not enter fullscreen mode or get media:", err);
+            setError("Fullscreen mode and camera/mic access are required. Please allow them and try again.");
         }
     }
   };
@@ -194,18 +206,24 @@ export default function ExamPage() {
   const handleTermination = useCallback((reason: string) => {
     setTerminationReason(reason);
     setView('terminated');
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
     if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  }, []);
+  }, [stream]);
 
   const handleSuccessfulSubmit = useCallback((details: SubmissionDetails) => {
     setSubmissionDetails(details);
     setView('submitted');
+     if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
      if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  }, []);
+  }, [stream]);
   
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
@@ -239,6 +257,7 @@ export default function ExamPage() {
                   examId={examId}
                   onTerminate={handleTermination}
                   onInitiateSubmit={() => setView('confirm')}
+                  stream={stream}
                 />
             );
         case 'confirm':
