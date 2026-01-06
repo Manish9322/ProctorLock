@@ -6,16 +6,6 @@ import { ExamSession, type SubmissionDetails } from '@/components/candidate/exam
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { AlertCircle, Check, ShieldCheck, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel
-} from '@/components/ui/alert-dialog';
 
 export default function ExamPage() {
   const [isExamStarted, setIsExamStarted] = useState(false);
@@ -28,12 +18,6 @@ export default function ExamPage() {
   const [terminationReason, setTerminationReason] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
-
-  const [isSubmitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [unansweredQuestionsCount, setUnansweredQuestionsCount] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const examSessionRef = useRef<{ handleFinalSubmit: () => Promise<void> }>(null);
 
   const handleStartExam = async () => {
     setError(null);
@@ -66,25 +50,13 @@ export default function ExamPage() {
     }
   }, []);
 
-  const handleConfirmSubmit = async () => {
-    if (examSessionRef.current) {
-        setIsSubmitting(true);
-        await examSessionRef.current.handleFinalSubmit();
-        setIsSubmitting(false);
-        setSubmitDialogOpen(false);
-    }
-  };
-  
   const renderContent = () => {
     if (isExamStarted) {
       return (
         <ExamSession
-          ref={examSessionRef}
           examId={examId}
           onTerminate={handleTermination}
           onSuccessfulSubmit={handleSuccessfulSubmit}
-          setUnansweredQuestionsCount={setUnansweredQuestionsCount}
-          setSubmitDialogOpen={setSubmitDialogOpen}
         />
       );
     }
@@ -197,30 +169,6 @@ export default function ExamPage() {
       className="min-h-screen w-full bg-background text-foreground"
     >
         {renderContent()}
-         <AlertDialog open={isSubmitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You cannot make any changes after submitting.
-                        {unansweredQuestionsCount > 0 && (
-                            <span className="font-semibold block mt-2 text-destructive">
-                                You have {unansweredQuestionsCount} unanswered question{unansweredQuestionsCount > 1 ? 's' : ''}.
-                            </span>
-                        )}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                        onClick={handleConfirmSubmit} 
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </div>
   );
 }

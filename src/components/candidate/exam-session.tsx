@@ -1,22 +1,17 @@
-
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-  AlertDialogCancel
-} from '@/components/ui/alert-dialog';
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, LogOut, ChevronLeft, ChevronRight, Bookmark, CheckSquare, Square, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, CheckSquare, Square } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
@@ -26,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { SubmitExamButton } from './submit-exam-button';
 
 type ActivityLog = {
   type: 'focus' | 'activity' | 'snapshot';
@@ -93,16 +89,14 @@ const QuestionNavigator = ({
   answers,
   markedForReview,
   onSelectQuestion,
-  isSubmitting,
-  onSubmitClick,
+  onConfirmSubmit,
 }: {
   questions: Question[];
   currentQuestionIndex: number;
   answers: { [key: string]: string };
   markedForReview: { [key: string]: boolean };
   onSelectQuestion: (index: number) => void;
-  isSubmitting: boolean;
-  onSubmitClick: () => void;
+  onConfirmSubmit: () => Promise<void>;
 }) => {
   const getStatus = (index: number): QuestionStatus => {
     const questionId = questions[index].id;
@@ -114,6 +108,8 @@ const QuestionNavigator = ({
     if (isAnswered) return 'answered';
     return 'unanswered';
   };
+
+  const unansweredQuestionsCount = questions.length - Object.keys(answers).length;
 
   return (
     <Card className="h-full flex flex-col">
@@ -157,26 +153,25 @@ const QuestionNavigator = ({
         </div>
       </CardContent>
        <CardFooter className="mt-auto flex-col items-stretch p-4 gap-2">
-            <Button onClick={onSubmitClick} variant="destructive" size="sm" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? 'Submitting...' : 'Submit Exam'}
-            </Button>
+            <SubmitExamButton
+                unansweredQuestionsCount={unansweredQuestionsCount}
+                onConfirmSubmit={onConfirmSubmit}
+            />
         </CardFooter>
     </Card>
   );
 };
 
 
-export function ExamSession({
+export const ExamSession = forwardRef(function ExamSession({
   examId,
   onTerminate,
   onSuccessfulSubmit,
-  setUnansweredQuestionsCount,
 }: {
   examId: string;
   onTerminate: (reason: string) => void;
   onSuccessfulSubmit: (details: SubmissionDetails) => void;
-  setUnansweredQuestionsCount: (count: number) => void;
-}) {
+}, ref) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,11 +181,29 @@ export function ExamSession({
   const [markedForReview, setMarkedForReview] = useState<{ [key: string]: boolean }>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
 
-  const terminateExam = useCallback((reason: string) => {
-    onTerminate(reason);
+  const handleFinalSubmit = useCallback(async () => {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const details: SubmissionDetails = {
+        totalQuestions: questions.length,
+        attempted: Object.keys(answers).length,
+        unattempted: questions.length - Object.keys(answers).length,
+        submissionTime: new Date(),
+    };
+    onSuccessfulSubmit(details);
+
     if (document.fullscreenElement) {
       document.exitFullscreen();
     }
+  }, [questions, answers, onSuccessfulSubmit]);
+  
+  useImperativeHandle(ref, () => ({
+      handleFinalSubmit
+  }));
+
+  const terminateExam = useCallback((reason: string) => {
+    onTerminate(reason);
   }, [onTerminate]);
 
   const addLog = useCallback((log: Omit<ActivityLog, 'timestamp'>) => {
@@ -231,18 +244,13 @@ export function ExamSession({
 
   useEffect(() => {
     if (timeLeft <= 0) {
+      terminateExam("Time's up! Your exam has been automatically submitted.");
       handleFinalSubmit();
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  useEffect(() => {
-    const count = questions.length - Object.keys(answers).length;
-    setUnansweredQuestionsCount(count);
-  }, [answers, questions.length, setUnansweredQuestionsCount]);
-
+  }, [timeLeft, handleFinalSubmit, terminateExam]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -255,20 +263,6 @@ export function ExamSession({
 
   const goToNext = () => setCurrentQuestionIndex(prev => Math.min(prev + 1, questions.length - 1));
   const goToPrevious = () => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
-
-  const handleFinalSubmit = async () => {
-    const details: SubmissionDetails = {
-        totalQuestions: questions.length,
-        attempted: Object.keys(answers).length,
-        unattempted: questions.length - Object.keys(answers).length,
-        submissionTime: new Date(),
-    };
-    onSuccessfulSubmit(details);
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
-  };
 
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -320,8 +314,7 @@ export function ExamSession({
                     answers={answers}
                     markedForReview={markedForReview}
                     onSelectQuestion={setCurrentQuestionIndex}
-                    isSubmitting={false} // This is now controlled by parent
-                    onSubmitClick={() => {}} // This is now controlled by parent
+                    onConfirmSubmit={handleFinalSubmit}
                 />
             </div>
         </main>
@@ -329,4 +322,4 @@ export function ExamSession({
         <canvas ref={canvasRef} className="hidden" />
     </div>
   );
-}
+});
