@@ -64,13 +64,16 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useGetCandidatesQuery, useUpdateCandidateMutation, useDeleteCandidateMutation } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import type { Candidate } from '@/models/candidate.model.js';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+
 
 const CandidateModal = ({
     modalState,
@@ -208,6 +211,169 @@ const CandidateModal = ({
     );
 };
 
+interface DataTableProps {
+    data: Candidate[];
+    columns: any[];
+    isLoading: boolean;
+    isFetching: boolean;
+}
+
+const DataTable = ({ data, columns, isLoading, isFetching }: DataTableProps) => {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    
+    const page = searchParams.get('page') ?? '1';
+    const pageSize = searchParams.get('pageSize') ?? '10';
+
+    const pageCount = Math.ceil(data.length / Number(pageSize));
+    const pageIndex = parseInt(page) - 1;
+    
+    const paginatedData = data.slice(pageIndex * Number(pageSize), (pageIndex + 1) * Number(pageSize));
+
+    const createQueryString = React.useCallback(
+        (params: Record<string, string | number | null>) => {
+          const newSearchParams = new URLSearchParams(searchParams.toString());
+          for (const [key, value] of Object.entries(params)) {
+            if (value === null) {
+              newSearchParams.delete(key);
+            } else {
+              newSearchParams.set(key, String(value));
+            }
+          }
+          return newSearchParams.toString();
+        },
+        [searchParams]
+    );
+
+    return (
+        <div className="space-y-4">
+            <div className="rounded-md border">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    {columns.map((column) => (
+                        <TableHead key={String(column.accessorKey)}>
+                        {column.header.sortable ? (
+                            <Button
+                            variant="ghost"
+                            onClick={() => { /* handleSort(String(column.accessorKey)) */ }}
+                            >
+                            {column.header.title}
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        ) : (
+                            column.header.title
+                        )}
+                        </TableHead>
+                    ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {isLoading || isFetching ? (
+                        Array.from({ length: Number(pageSize) }).map((_, i) => (
+                            <TableRow key={i}>
+                                {columns.map((col, j) => (
+                                    <TableCell key={j}>
+                                        <Skeleton className="h-6" />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    ) : paginatedData.length > 0 ? (
+                    paginatedData.map((row) => (
+                        <TableRow key={row._id}>
+                        {columns.map((column) => (
+                            <TableCell key={String(column.accessorKey)}>
+                            {column.cell
+                                ? column.cell({ row: { original: row, getValue: (key: string) => (row as any)[key] } })
+                                : (row as any)[column.accessorKey]}
+                            </TableCell>
+                        ))}
+                        </TableRow>
+                    ))
+                    ) : (
+                    <TableRow>
+                        <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                        >
+                        No results found.
+                        </TableCell>
+                    </TableRow>
+                    )}
+                </TableBody>
+                </Table>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">Rows per page</p>
+                    <Select
+                        value={pageSize}
+                        onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
+                    >
+                        <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue placeholder={pageSize} />
+                        </SelectTrigger>
+                        <SelectContent side="top">
+                        {[5, 10, 20, 50].map((size) => (
+                            <SelectItem key={size} value={`${size}`}>
+                            {size}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">
+                        Page {page} of {pageCount}
+                    </span>
+                <div className="flex items-center space-x-1">
+                    <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
+                    disabled={pageIndex === 0}
+                    >
+                    <span className="sr-only">Go to first page</span>
+                    <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
+                    disabled={pageIndex === 0}
+                    >
+                    <span className="sr-only">Go to previous page</span>
+                    <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
+                    disabled={pageIndex + 1 >= pageCount}
+                    >
+                    <span className="sr-only">Go to next page</span>
+                    <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                    variant="outline"
+                    className="h-8 w-8 p-0"
+                    onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
+                    disabled={pageIndex + 1 >= pageCount}
+                    >
+                    <span className="sr-only">Go to last page</span>
+                    <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 export default function CandidatesPage() {
     const router = useRouter();
     const pathname = usePathname();
@@ -215,7 +381,7 @@ export default function CandidatesPage() {
     const { toast } = useToast();
 
     // RTK Query Hooks
-    const { data: candidatesData = [], isLoading: isFetchingCandidates } = useGetCandidatesQuery({});
+    const { data: candidatesData = [], isLoading: isFetchingCandidates, isSuccess } = useGetCandidatesQuery({});
     const [updateCandidate, { isLoading: isUpdating }] = useUpdateCandidateMutation();
     const [deleteCandidateApi, { isLoading: isDeleting }] = useDeleteCandidateMutation();
 
@@ -225,19 +391,32 @@ export default function CandidatesPage() {
     const [candidateToReject, setCandidateToReject] = useState<Candidate | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
-    // Search params
-    const page = searchParams.get('page') ?? '1';
-    const pageSize = searchParams.get('pageSize') ?? '10';
+    // Search and filter state
     const searchTerm = searchParams.get('search') ?? '';
-    const sortParam = searchParams.get('sort');
-
-    // Component state
-    const [data, setData] = React.useState<Candidate[]>([]);
-    const [pageCount, setPageCount] = React.useState(0);
-    const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
+    
+    // Filtered data based on search term
+    const filteredCandidates = React.useMemo(() => {
+        if (!isSuccess) return [];
+        let dataToFilter = [...candidatesData];
+        if (debouncedSearchTerm) {
+            const term = debouncedSearchTerm.toLowerCase();
+             const searchableColumns: (keyof Candidate)[] = ['name', 'email', 'examId', 'college', 'role', 'phoneNumber', 'govIdNumber'];
+            dataToFilter = dataToFilter.filter(
+                (candidate) =>
+                searchableColumns.some(key =>
+                    String(candidate[key] ?? '').toLowerCase().includes(term)
+                )
+            );
+        }
+        return dataToFilter;
+    }, [candidatesData, debouncedSearchTerm, isSuccess]);
 
-    const searchableColumns: (keyof Candidate)[] = ['name', 'email', 'examId', 'college', 'role', 'phoneNumber', 'govIdNumber'];
+    // Data for each tab
+    const students = React.useMemo(() => filteredCandidates.filter(c => c.role === 'student'), [filteredCandidates]);
+    const professionals = React.useMemo(() => filteredCandidates.filter(c => c.role === 'professional'), [filteredCandidates]);
+    const examiners = React.useMemo(() => filteredCandidates.filter(c => c.role === 'examiner'), [filteredCandidates]);
+    const admins = React.useMemo(() => filteredCandidates.filter(c => c.role === 'admin'), [filteredCandidates]);
     
     const handleOpenModal = (type: 'view' | 'result', candidate: Candidate) => {
         setModalState({ type, candidate });
@@ -274,98 +453,21 @@ export default function CandidatesPage() {
         }
     }
 
-
-    interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions' | '_id';
-        header: {
-          title: string;
-          sortable?: boolean;
-        };
-        cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
+    const handleApprovalToggle = (candidate: Candidate, approved: boolean) => {
+        if (approved) {
+            handleApproval(candidate, 'Approved');
+        } else {
+            setCandidateToReject(candidate);
+        }
     }
 
-    const columns: DataTableColumnDef<Candidate>[] = [
-        {
-            accessorKey: 'name',
-            header: { title: 'Name', sortable: true },
-            cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
-        },
-        {
-            accessorKey: 'email',
-            header: { title: 'Email', sortable: true },
-        },
-        {
-            accessorKey: 'role',
-            header: { title: 'Role', sortable: true },
-        },
-        {
-            accessorKey: 'approvalStatus',
-            header: { title: 'Approval Status', sortable: true },
-            cell: ({ row }) => {
-                const status = row.original.approvalStatus;
-                return (
-                    <Badge variant={
-                        status === 'Approved' ? 'secondary' :
-                        status === 'Rejected' ? 'destructive' :
-                        'default'
-                    }>{status}</Badge>
-                )
-            }
-        },
-        {
-            accessorKey: 'status',
-            header: { title: 'Exam Status', sortable: true },
-            cell: ({ row }) => {
-                const status = row.getValue('status') as Candidate['status'];
-                return (
-                    <Badge variant={ status ? (
-                        status === 'Flagged' ? 'destructive'
-                        : status === 'Finished' ? 'secondary'
-                        : status === 'In Progress' ? 'default' : 'outline') : 'outline'
-                    }>
-                        {status || 'N/A'}
-                    </Badge>
-                );
-            },
-        },
-        {
-            accessorKey: 'actions',
-            header: { title: 'Actions' },
-            cell: ({ row }) => (
-                <div className="text-right">
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        {row.original.approvalStatus === 'Pending' && (
-                            <>
-                                <DropdownMenuItem onClick={() => handleApproval(row.original, 'Approved')}>
-                                    <ThumbsUp className="mr-2 h-4 w-4" /> Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setCandidateToReject(row.original)}>
-                                    <ThumbsDown className="mr-2 h-4 w-4" /> Reject
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                            </>
-                        )}
-                        <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(row.original)}>
-                            <Trash className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            ),
-        },
-    ];
-
+    // Debounce search term
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            router.push(`${pathname}?${createQueryString({ search: debouncedSearchTerm || null, page: '1' })}`);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [debouncedSearchTerm, pathname, router]);
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
@@ -382,16 +484,6 @@ export default function CandidatesPage() {
         [searchParams]
     );
 
-    const pageIndex = parseInt(page) - 1;
-
-    const sort = React.useMemo(() => {
-        if (sortParam) {
-          const [id, dir] = sortParam.split('.');
-          return { id, desc: dir === 'desc' };
-        }
-        return null;
-    }, [sortParam]);
-
     const stats = React.useMemo(() => {
         const total = candidatesData.length;
         const finished = candidatesData.filter(c => c.status === 'Finished').length;
@@ -401,264 +493,208 @@ export default function CandidatesPage() {
         return { total, finished, flagged, inProgress, pendingApproval };
     }, [candidatesData]);
 
-    // Debounce search term
-    React.useEffect(() => {
-        const timer = setTimeout(() => {
-            router.push(`${pathname}?${createQueryString({ search: debouncedSearchTerm || null, page: '1' })}`);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [debouncedSearchTerm, pathname, router, createQueryString]);
 
-    const fetchData = React.useCallback(async (options: {
-        pageIndex: number;
-        pageSize: number;
-        searchTerm: string;
-        sort: { id: string; desc: boolean } | null;
-    }) => {
-        let filteredCandidates = candidatesData;
+    const getBaseColumns = (includeExamStatus = true) => [
+        {
+            accessorKey: 'name',
+            header: { title: 'Name', sortable: true },
+            cell: ({ row }: { row: { original: Candidate } }) => <div className="font-medium">{row.original.name}</div>,
+        },
+        {
+            accessorKey: 'email',
+            header: { title: 'Email', sortable: true },
+        },
+        {
+            accessorKey: 'college',
+            header: { title: 'Organization / Institute', sortable: true },
+        },
+        ...(includeExamStatus ? [{
+            accessorKey: 'status',
+            header: { title: 'Exam Status', sortable: true },
+            cell: ({ row }: { row: { original: Candidate } }) => {
+                const status = row.original.status;
+                return (
+                    <Badge variant={ status ? (
+                        status === 'Flagged' ? 'destructive'
+                        : status === 'Finished' ? 'secondary'
+                        : status === 'In Progress' ? 'default' : 'outline') : 'outline'
+                    }>
+                        {status || 'N/A'}
+                    </Badge>
+                );
+            },
+        }] : []),
+        {
+            accessorKey: 'actions',
+            header: { title: 'Actions' },
+            cell: ({ row }: { row: { original: Candidate } }) => (
+                <div className="text-right">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(row.original)}>
+                            <Trash className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ),
+        },
+    ];
 
-        if (options.searchTerm) {
-            const term = options.searchTerm.toLowerCase();
-            filteredCandidates = candidatesData.filter(
-                (candidate) =>
-                searchableColumns.some(key =>
-                    String(candidate[key]).toLowerCase().includes(term)
+    const studentColumns = getBaseColumns(true);
+    const professionalColumns = getBaseColumns(true);
+    const adminColumns = getBaseColumns(false);
+
+    const examinerColumns = [
+        ...getBaseColumns(false).filter(c => c.accessorKey !== 'actions'),
+        {
+            accessorKey: 'approvalStatus',
+            header: { title: 'Approval' },
+            cell: ({ row }: { row: { original: Candidate } }) => {
+                const status = row.original.approvalStatus;
+                const isApproved = status === 'Approved';
+                 return (
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={isApproved}
+                            onCheckedChange={(checked) => handleApprovalToggle(row.original, checked)}
+                            aria-label="Approval toggle"
+                            disabled={status === 'Rejected' || isUpdating}
+                        />
+                        <Badge variant={
+                            status === 'Approved' ? 'secondary' :
+                            status === 'Rejected' ? 'destructive' :
+                            'default'
+                        }>{status}</Badge>
+                    </div>
                 )
-            );
-        }
-        
-        if (options.sort) {
-            filteredCandidates.sort((a, b) => {
-                const key = options.sort!.id as keyof Candidate;
-                const valA = (a as any)[key] || '';
-                const valB = (b as any)[key] || '';
-                if (valA < valB) return options.sort!.desc ? 1 : -1;
-                if (valA > valB) return options.sort!.desc ? -1 : 1;
-                return 0;
-            });
-        }
-        
-        const start = options.pageIndex * options.pageSize;
-        const end = start + options.pageSize;
-        const pageData = filteredCandidates.slice(start, end);
-        
-        return {
-            data: pageData,
-            pageCount: Math.ceil(filteredCandidates.length / options.pageSize),
-        };
-    }, [candidatesData]);
-
-    React.useEffect(() => {
-        setIsLoading(true);
-        fetchData({
-            pageIndex,
-            pageSize: Number(pageSize),
-            searchTerm,
-            sort
-        }).then(({ data, pageCount }) => {
-            setData(data);
-            setPageCount(pageCount);
-            setIsLoading(false);
-        });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData, candidatesData]);
-
-
-    const handleSort = (columnId: string) => {
-        let newSort;
-        if (sort && sort.id === columnId) {
-            if (sort.desc) {
-                newSort = null;
-            } else {
-                newSort = `${columnId}.desc`;
             }
-        } else {
-            newSort = `${columnId}.asc`;
-        }
-        router.push(`${pathname}?${createQueryString({ sort: newSort, page: '1' })}`);
-    };
+        },
+         {
+            accessorKey: 'actions',
+            header: { title: 'Actions' },
+            cell: ({ row }: { row: { original: Candidate } }) => (
+                <div className="text-right">
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(row.original)}>
+                            <Trash className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ),
+        },
+    ];
     
     const PageContent = () => (
         <div className="space-y-4">
             <div>
                 <h1 className="text-2xl font-bold">Candidates</h1>
                 <p className="text-muted-foreground">
-                    View and manage all registered candidates and examiner approvals.
+                    View and manage all registered users and examiner approvals.
                 </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.total}</div>
-                </CardContent>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.total}</div>
+                    </CardContent>
                 </Card>
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.pendingApproval}</div>
-                </CardContent>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.pendingApproval}</div>
+                    </CardContent>
                 </Card>
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.finished}</div>
-                </CardContent>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Finished Exam</CardTitle>
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.finished}</div>
+                    </CardContent>
                 </Card>
                 <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Flagged Sessions</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.flagged}</div>
-                </CardContent>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Flagged Sessions</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.flagged}</div>
+                    </CardContent>
                 </Card>
             </div>
 
-            <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder={`Search candidates...`}
-                        value={debouncedSearchTerm}
-                        onChange={(e) => setDebouncedSearchTerm(e.target.value)}
-                        className="pl-10 w-full md:w-80"
-                    />
+            <Card>
+                <CardHeader>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>
+                        Filter users by role and manage examiner approvals.
+                    </CardDescription>
+                    <div className="pt-4">
+                         <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder={`Search all candidates...`}
+                                value={debouncedSearchTerm}
+                                onChange={(e) => setDebouncedSearchTerm(e.target.value)}
+                                className="pl-10 w-full md:w-80"
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="rounded-md border">
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                        {columns.map((column) => (
-                            <TableHead key={String(column.accessorKey)}>
-                            {column.header.sortable ? (
-                                <Button
-                                variant="ghost"
-                                onClick={() => handleSort(String(column.accessorKey))}
-                                >
-                                {column.header.title}
-                                <ArrowUpDown className="ml-2 h-4 w-4" />
-                                </Button>
-                            ) : (
-                                column.header.title
-                            )}
-                            </TableHead>
-                        ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading || isFetchingCandidates ? (
-                            Array.from({ length: Number(pageSize) }).map((_, i) => (
-                                <TableRow key={i}>
-                                    {columns.map((col, j) => (
-                                        <TableCell key={j}>
-                                            <Skeleton className="h-6" />
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : data.length > 0 ? (
-                        data.map((row) => (
-                            <TableRow key={row._id}>
-                            {columns.map((column) => (
-                                <TableCell key={String(column.accessorKey)}>
-                                {column.cell
-                                    ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
-                                    : (row as any)[column.accessorKey]}
-                                </TableCell>
-                            ))}
-                            </TableRow>
-                        ))
-                        ) : (
-                        <TableRow>
-                            <TableCell
-                            colSpan={columns.length}
-                            className="h-24 text-center"
-                            >
-                            No results found.
-                            </TableCell>
-                        </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
-                </div>
-
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <p className="text-sm font-medium">Rows per page</p>
-                        <Select
-                            value={pageSize}
-                            onValueChange={(value) => router.push(`${pathname}?${createQueryString({ pageSize: value, page: '1' })}`)}
-                        >
-                            <SelectTrigger className="h-8 w-[70px]">
-                            <SelectValue placeholder={pageSize} />
-                            </SelectTrigger>
-                            <SelectContent side="top">
-                            {[5, 10, 20, 50].map((size) => (
-                                <SelectItem key={size} value={`${size}`}>
-                                {size}
-                                </SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">
-                            Page {page} of {pageCount}
-                        </span>
-                    <div className="flex items-center space-x-1">
-                        <Button
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => router.push(`${pathname}?${createQueryString({ page: '1' })}`)}
-                        disabled={pageIndex === 0}
-                        >
-                        <span className="sr-only">Go to first page</span>
-                        <ChevronsLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex })}`)}
-                        disabled={pageIndex === 0}
-                        >
-                        <span className="sr-only">Go to previous page</span>
-                        <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageIndex + 2 })}`)}
-                        disabled={pageIndex + 1 >= pageCount}
-                        >
-                        <span className="sr-only">Go to next page</span>
-                        <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        onClick={() => router.push(`${pathname}?${createQueryString({ page: pageCount })}`)}
-                        disabled={pageIndex + 1 >= pageCount}
-                        >
-                        <span className="sr-only">Go to last page</span>
-                        <ChevronsRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    </div>
-                </div>
-            </div>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="student">
+                        <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="student">Students ({students.length})</TabsTrigger>
+                            <TabsTrigger value="professional">Professionals ({professionals.length})</TabsTrigger>
+                            <TabsTrigger value="examiner">Examiners ({examiners.length})</TabsTrigger>
+                            <TabsTrigger value="admin">Admins ({admins.length})</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="student" className="mt-4">
+                             <DataTable data={students} columns={studentColumns} isLoading={isFetchingCandidates} isFetching={isFetchingCandidates} />
+                        </TabsContent>
+                         <TabsContent value="professional" className="mt-4">
+                             <DataTable data={professionals} columns={professionalColumns} isLoading={isFetchingCandidates} isFetching={isFetchingCandidates} />
+                        </TabsContent>
+                         <TabsContent value="examiner" className="mt-4">
+                             <DataTable data={examiners} columns={examinerColumns} isLoading={isFetchingCandidates} isFetching={isFetchingCandidates} />
+                        </TabsContent>
+                         <TabsContent value="admin" className="mt-4">
+                             <DataTable data={admins} columns={adminColumns} isLoading={isFetchingCandidates} isFetching={isFetchingCandidates} />
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
         </div>
     );
 
@@ -712,3 +748,4 @@ export default function CandidatesPage() {
         </>
     );
 }
+    
