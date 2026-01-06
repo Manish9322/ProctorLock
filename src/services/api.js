@@ -56,6 +56,14 @@ export const api = createApi({
       }),
       invalidatesTags: [{ type: 'Questions', id: 'LIST' }],
     }),
+    createBulkQuestions: builder.mutation({
+        query: (newQuestions) => ({
+            url: 'questions/bulk',
+            method: 'POST',
+            body: newQuestions,
+        }),
+        invalidatesTags: [{ type: 'Questions', id: 'LIST' }],
+    }),
     updateQuestion: builder.mutation({
       query: ({ id, ...patch }) => ({
         url: `questions/${id}`,
@@ -84,4 +92,5 @@ export const {
     useCreateQuestionMutation,
     useUpdateQuestionMutation,
     useDeleteQuestionMutation,
+    useCreateBulkQuestionsMutation,
 } = api;

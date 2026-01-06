@@ -24,6 +24,7 @@ import {
     Upload,
     FileJson,
     FileSpreadsheet,
+    ClipboardPaste,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,8 +45,10 @@ import { QuestionDialog } from '@/components/examiner/create-test-form';
 import type { Question } from '@/components/examiner/create-test-form';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useGetQuestionsQuery, useCreateQuestionMutation, useUpdateQuestionMutation, useDeleteQuestionMutation } from '@/services/api';
+import { useGetQuestionsQuery, useCreateQuestionMutation, useUpdateQuestionMutation, useDeleteQuestionMutation, useCreateBulkQuestionsMutation } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function QuestionBankPage() {
     const router = useRouter();
@@ -58,10 +61,15 @@ export default function QuestionBankPage() {
     const [createQuestion, { isLoading: isCreating }] = useCreateQuestionMutation();
     const [updateQuestion, { isLoading: isUpdating }] = useUpdateQuestionMutation();
     const [deleteQuestion, { isLoading: isDeleting }] = useDeleteQuestionMutation();
+    const [createBulkQuestions, { isLoading: isCreatingBulk }] = useCreateBulkQuestionsMutation();
 
     // Modal states
     const [modalState, setModalState] = useState<{ type: 'add' | 'edit' | null; question: Question | null }>({ type: null, question: null });
     const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+
+    // Bulk paste state
+    const [pasteFormat, setPasteFormat] = useState('json');
+    const [pastedText, setPastedText] = useState('');
 
     // Search params
     const page = searchParams.get('page') ?? '1';
@@ -124,6 +132,54 @@ export default function QuestionBankPage() {
             }
         }
     };
+    
+    const handleBulkAdd = async () => {
+        if (!pastedText.trim()) {
+            toast({ variant: 'destructive', title: "Error", description: "Pasted text cannot be empty." });
+            return;
+        }
+
+        try {
+            let questionsToAdd: Omit<Question, '_id' | 'id'>[] = [];
+
+            if (pasteFormat === 'json') {
+                questionsToAdd = JSON.parse(pastedText);
+                if (!Array.isArray(questionsToAdd)) throw new Error("JSON must be an array of question objects.");
+            } else if (pasteFormat === 'csv') {
+                const lines = pastedText.trim().split('\n');
+                const headers = lines.shift()?.split(',').map(h => h.trim());
+                if (!headers || !['type', 'text', 'marks'].every(h => headers.includes(h))) {
+                    throw new Error("CSV must contain 'type', 'text', and 'marks' headers.");
+                }
+                
+                questionsToAdd = lines.map(line => {
+                    const values = line.split(',');
+                    const questionObj: any = {};
+                    headers.forEach((header, index) => {
+                         let value: any = values[index]?.trim() || '';
+                         if (header === 'options') {
+                            value = value.split(';').map((s: string) => s.trim());
+                         } else if (header === 'marks' || header === 'negativeMarks') {
+                             value = Number(value) || 0;
+                         }
+                        questionObj[header] = value;
+                    });
+                    return questionObj;
+                });
+            }
+
+            const result = await createBulkQuestions(questionsToAdd).unwrap();
+            toast({ title: "Success", description: `${result.insertedCount} questions were added to the bank.`});
+            setPastedText('');
+
+        } catch (err: any) {
+             toast({
+                variant: 'destructive',
+                title: "Bulk Add Failed",
+                description: err.data?.message || err.message || "Could not parse or save the questions."
+            });
+        }
+    }
 
 
     interface DataTableColumnDef<TData> {
@@ -304,12 +360,12 @@ export default function QuestionBankPage() {
                  <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Manage Questions</CardTitle>
-                        <CardDescription>Add questions individually or bulk upload via CSV or JSON.</CardDescription>
+                        <CardDescription>Add questions individually or in bulk.</CardDescription>
                     </div>
                      <QuestionDialog
-                        open={modalState.type === 'add' || modalState.type === 'edit'}
+                        open={modalState.type === 'add'}
                         onOpenChange={(isOpen) => !isOpen && handleCloseModal()}
-                        question={modalState.question}
+                        question={null}
                         onSave={handleSaveQuestion}
                         isSaving={isCreating || isUpdating}
                      >
@@ -320,11 +376,43 @@ export default function QuestionBankPage() {
                     </QuestionDialog>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="csv">
-                        <TabsList className="grid w-full grid-cols-2">
+                    <Tabs defaultValue="paste">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="paste"><ClipboardPaste className="mr-2 h-4 w-4"/>Paste from Text</TabsTrigger>
                             <TabsTrigger value="csv"><FileSpreadsheet className="mr-2 h-4 w-4"/>CSV Upload</TabsTrigger>
                             <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4"/>JSON Upload</TabsTrigger>
                         </TabsList>
+                        <TabsContent value="paste" className="mt-4">
+                            <div className="space-y-4">
+                                <Textarea
+                                    placeholder='Paste your questions here in JSON or CSV format. Ensure the format matches the selected type below.'
+                                    className="min-h-48 font-mono text-xs"
+                                    value={pastedText}
+                                    onChange={(e) => setPastedText(e.target.value)}
+                                />
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="paste-format">Format</Label>
+                                         <Select value={pasteFormat} onValueChange={setPasteFormat}>
+                                            <SelectTrigger id="paste-format" className="w-[120px]">
+                                                <SelectValue placeholder="Select format" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="json">JSON</SelectItem>
+                                                <SelectItem value="csv">CSV</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Button onClick={handleBulkAdd} disabled={isCreatingBulk}>
+                                        {isCreatingBulk ? 'Adding...' : 'Add Questions from Text'}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    For CSV, include headers: `type,text,marks,options,correctAnswer`. `options` should be semi-colon separated (e.g., "Option A;Option B").
+                                    For JSON, paste an array of question objects.
+                                </p>
+                            </div>
+                        </TabsContent>
                         <TabsContent value="csv" className="mt-4">
                              <div className="space-y-2">
                                 <Label>Upload CSV File</Label>
@@ -487,6 +575,17 @@ export default function QuestionBankPage() {
 
     return (
         <>
+            <QuestionDialog
+                open={modalState.type === 'edit'}
+                onOpenChange={(isOpen) => !isOpen && handleCloseModal()}
+                question={modalState.question}
+                onSave={handleSaveQuestion}
+                isSaving={isCreating || isUpdating}
+            >
+                {/* This is a placeholder, the dialog is triggered from the table now */}
+                <span />
+            </QuestionDialog>
+
             {questionToDelete && (
                 <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>
                     <AlertDialogContent>
@@ -509,4 +608,3 @@ export default function QuestionBankPage() {
         </>
     )
 }
-
