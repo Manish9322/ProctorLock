@@ -15,13 +15,23 @@ import { LogOut } from 'lucide-react';
 interface LogoutConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onConfirm?: () => void;
 }
 
 export function LogoutConfirmationDialog({
   open,
   onOpenChange,
+  onConfirm
 }: LogoutConfirmationDialogProps) {
   const { logout } = useAuth();
+
+  const handleConfirm = () => {
+    if (onConfirm) {
+        onConfirm();
+    } else {
+        logout();
+    }
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -36,7 +46,7 @@ export function LogoutConfirmationDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => logout()}>
+          <AlertDialogAction onClick={handleConfirm}>
             Log Out
           </AlertDialogAction>
         </AlertDialogFooter>

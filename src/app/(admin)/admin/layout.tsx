@@ -180,35 +180,3 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-
-// Update LogoutConfirmationDialog to accept a custom onConfirm handler
-function LogoutConfirmationDialog({
-  open,
-  onOpenChange,
-  onConfirm
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-             <LogOut className="h-5 w-5" /> Are you sure you want to log out?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            You will be returned to the login page.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
-            Log Out
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
