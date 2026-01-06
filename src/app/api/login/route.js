@@ -27,11 +27,13 @@ export async function POST(req) {
         }
 
         // Check if user is approved (especially for 'examiner')
-        if (user.approvalStatus === 'Pending') {
-            return NextResponse.json({ message: 'Your account is pending approval by an administrator.' }, { status: 403 });
-        }
-        if (user.approvalStatus === 'Rejected') {
-            return NextResponse.json({ message: 'Your account registration was rejected. Please contact support.' }, { status: 403 });
+        if (user.role === 'examiner') {
+            if (user.approvalStatus === 'Pending') {
+                return NextResponse.json({ message: 'Your account is pending approval by an administrator.' }, { status: 403 });
+            }
+            if (user.approvalStatus === 'Rejected') {
+                return NextResponse.json({ message: 'Your account registration was rejected. Please contact support.' }, { status: 403 });
+            }
         }
         
         const isMatch = await bcryptjs.compare(password, user.password);
