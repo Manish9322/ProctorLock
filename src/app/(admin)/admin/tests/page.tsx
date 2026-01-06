@@ -37,20 +37,21 @@ type Test = {
     id: string;
     title: string;
     candidates: number;
+    marks: number;
     status: TestStatus;
     approval: ApprovalStatus;
     createdBy: string;
 };
 
 const testsData: Test[] = [
-  { id: 'CS101-FINAL', title: 'Intro to CS - Final', candidates: 150, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
-  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', candidates: 88, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
-  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', candidates: 120, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
-  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', candidates: 0, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com' },
-  { id: 'HIST202-PAPER', title: 'American History II - Paper', candidates: 75, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com' },
-  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', candidates: 95, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', candidates: 0, status: 'Draft', approval: 'Rejected', createdBy: 'examiner2@example.com' },
-  { id: 'ART-HISTORY', title: 'Art History - Final Project', candidates: 40, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com' },
+  { id: 'CS101-FINAL', title: 'Intro to CS - Final', candidates: 150, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', candidates: 88, marks: 50, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', candidates: 120, marks: 25, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', candidates: 0, marks: 100, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com' },
+  { id: 'HIST202-PAPER', title: 'American History II - Paper', candidates: 75, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com' },
+  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', candidates: 95, marks: 75, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', candidates: 0, marks: 20, status: 'Draft', approval: 'Rejected', createdBy: 'examiner2@example.com' },
+  { id: 'ART-HISTORY', title: 'Art History - Final Project', candidates: 40, marks: 150, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com' },
 ];
 
 interface DataTableColumnDef<TData> {
@@ -85,6 +86,14 @@ const columns: DataTableColumnDef<Test>[] = [
       sortable: true,
     },
     cell: ({ row }) => <div className="text-center">{row.getValue('candidates')}</div>
+  },
+    {
+    accessorKey: 'marks',
+    header: {
+      title: 'Total Marks',
+      sortable: true,
+    },
+    cell: ({ row }) => <div className="text-center">{row.getValue('marks')}</div>
   },
   {
     accessorKey: 'status',

@@ -106,7 +106,8 @@ type TestScheduling = {
 };
 
 type TestQuestions = {
-    count: number;
+    mcqCount: number;
+    descriptiveCount: number;
 }
 
 type TestRules = {
@@ -137,7 +138,8 @@ export function CreateTestForm() {
     gracePeriod: 5,
   });
   const [testQuestions, setTestQuestions] = useState<TestQuestions>({
-    count: 10,
+    mcqCount: 10,
+    descriptiveCount: 2,
   });
   const [testRules, setTestRules] = useState<TestRules>({
     fullscreen: true,
@@ -529,23 +531,38 @@ export function QuestionDialog({
 
 function TestQuestionsStep({ questions, setQuestions }: { questions: TestQuestions, setQuestions: React.Dispatch<React.SetStateAction<TestQuestions>>}) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <Alert>
                 <BookCopy className="h-4 w-4" />
                 <AlertTitle>Question Bank Integration</AlertTitle>
                 <AlertDescription>
-                    Questions will be randomly selected from the central Question Bank managed by the admin. Please specify the number of questions you want for this test.
+                    Questions will be randomly selected from the central Question Bank managed by the admin. Please specify the number of questions for each type.
                 </AlertDescription>
             </Alert>
-            <div className="space-y-2 max-w-xs">
-                <Label htmlFor="question-count">Number of Questions</Label>
-                <Input 
-                    id="question-count"
-                    type="number" 
-                    value={questions.count} 
-                    onChange={e => setQuestions({ count: parseInt(e.target.value) || 0 })}
-                    placeholder="e.g., 25" 
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="mcq-count">Number of MCQs</Label>
+                    <Input 
+                        id="mcq-count"
+                        type="number" 
+                        value={questions.mcqCount} 
+                        onChange={e => setQuestions(prev => ({ ...prev, mcqCount: parseInt(e.target.value) || 0 }))}
+                        placeholder="e.g., 20" 
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="descriptive-count">Number of Descriptive Questions</Label>
+                    <Input 
+                        id="descriptive-count"
+                        type="number" 
+                        value={questions.descriptiveCount} 
+                        onChange={e => setQuestions(prev => ({ ...prev, descriptiveCount: parseInt(e.target.value) || 0 }))}
+                        placeholder="e.g., 5" 
+                    />
+                </div>
+            </div>
+            <div className="pt-2">
+                <p className="font-medium">Total Questions: <span className="text-primary">{questions.mcqCount + questions.descriptiveCount}</span></p>
             </div>
         </div>
     );
@@ -676,7 +693,11 @@ function ReviewItem({ label, value, onEdit }: {label: string, value: React.React
 function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, onEdit: (index: number) => void}) {
     const { testDetails, testScheduling, testQuestions, testRules } = allState;
 
-    const isReadyForPublish = testDetails.name && testQuestions.count > 0;
+    // Default marks: 1 for MCQ, 5 for Descriptive
+    const totalMarks = (testQuestions.mcqCount * 1) + (testQuestions.descriptiveCount * 5);
+    const totalQuestions = testQuestions.mcqCount + testQuestions.descriptiveCount;
+
+    const isReadyForPublish = testDetails.name && totalQuestions > 0;
 
     return (
         <div className="space-y-8">
@@ -688,7 +709,7 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                         The test is missing required information. Please ensure the following are complete:
                         <ul className="list-disc pl-5 mt-2">
                             {!testDetails.name && <li>Test Name</li>}
-                            {testQuestions.count === 0 && <li>Number of questions must be greater than zero</li>}
+                            {totalQuestions === 0 && <li>Number of questions must be greater than zero</li>}
                         </ul>
                     </AlertDescription>
                 </Alert>
@@ -723,8 +744,11 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                     <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-5 w-5"/>Questions</CardTitle>
                     <Button variant="outline" size="sm" onClick={() => onEdit(2)}>Edit</Button>
                 </CardHeader>
-                <CardContent>
-                     <ReviewItem label="Number of Questions" value={`${testQuestions.count} (randomly selected)`} />
+                <CardContent className="divide-y">
+                     <ReviewItem label="MCQs" value={`${testQuestions.mcqCount}`} />
+                     <ReviewItem label="Descriptive Questions" value={`${testQuestions.descriptiveCount}`} />
+                     <ReviewItem label="Total Questions" value={totalQuestions} />
+                     <ReviewItem label="Total Marks" value={`${totalMarks} (assuming 1 mark/MCQ, 5 marks/Descriptive)`} />
                 </CardContent>
             </Card>
             
