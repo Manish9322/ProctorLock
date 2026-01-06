@@ -36,7 +36,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { registrationOptions } from '@/lib/config-data';
 import {
   Dialog,
   DialogContent,
@@ -56,33 +55,28 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-
-type College = {
-  id: string;
-  name: string;
-  type: 'University' | 'Organization' | 'Institute';
-  registrations: number;
-  location: string;
-};
-
-const collegesData: College[] = registrationOptions.colleges;
+import { useGetCollegesQuery, useCreateCollegeMutation, useUpdateCollegeMutation, useDeleteCollegeMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import type { College } from '@/models/college.model';
 
 const CollegeModal = ({
     modalState,
     onOpenChange,
     onSave,
+    isSaving,
 }: {
     modalState: { type: 'add' | 'edit' | null; college: College | null };
     onOpenChange: (open: boolean) => void;
-    onSave: (college: Omit<College, 'id' | 'registrations'>) => void;
+    onSave: (college: Partial<College>) => void;
+    isSaving: boolean;
 }) => {
     const { type, college } = modalState;
-    const [name, setName] = useState(college?.name || '');
-    const [collegeType, setCollegeType] = useState<College['type'] | ''>(college?.type || '');
-    const [location, setLocation] = useState(college?.location || '');
+    const [name, setName] = useState('');
+    const [collegeType, setCollegeType] = useState<College['type'] | ''>('');
+    const [location, setLocation] = useState('');
 
     React.useEffect(() => {
-        if (type === 'edit' && college) {
+        if (type && college) {
             setName(college.name);
             setCollegeType(college.type);
             setLocation(college.location);
@@ -95,7 +89,11 @@ const CollegeModal = ({
     
     const handleSave = () => {
         if (name && collegeType && location) {
-            onSave({ name, type: collegeType as College['type'], location });
+            const collegeData: Partial<College> = { name, type: collegeType as College['type'], location };
+            if (college?._id) {
+                collegeData._id = college._id;
+            }
+            onSave(collegeData);
         }
     };
     
@@ -136,8 +134,10 @@ const CollegeModal = ({
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>{isEdit ? 'Save Changes' : 'Add College'}</Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? (isEdit ? 'Saving...' : 'Adding...') : (isEdit ? 'Save Changes' : 'Add College')}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -148,14 +148,21 @@ export default function CollegesPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
+
+    // RTK Query Hooks
+    const { data: collegesData = [], isLoading: isFetchingColleges } = useGetCollegesQuery({});
+    const [createCollege, { isLoading: isCreating }] = useCreateCollegeMutation();
+    const [updateCollege, { isLoading: isUpdating }] = useUpdateCollegeMutation();
+    const [deleteCollege, { isLoading: isDeleting }] = useDeleteCollegeMutation();
 
     // Modal states
     const [modalState, setModalState] = useState<{ type: 'add' | 'edit' | null; college: College | null }>({ type: null, college: null });
-    const [deleteCollege, setDeleteCollege] = useState<College | null>(null);
+    const [collegeToDelete, setCollegeToDelete] = useState<College | null>(null);
 
     // Search params
     const page = searchParams.get('page') ?? '1';
-    const pageSize = searchParams.get('pageSize') ?? '5';
+    const pageSize = searchParams.get('pageSize') ?? '10';
     const searchTerm = searchParams.get('search') ?? '';
     const sortParam = searchParams.get('sort');
 
@@ -174,29 +181,40 @@ export default function CollegesPage() {
         setModalState({ type: null, college: null });
     };
 
-    const handleSaveCollege = (collegeData: Omit<College, 'id' | 'registrations'>) => {
-        if (modalState.type === 'edit' && modalState.college) {
-            console.log('Updating college:', modalState.college.id, collegeData);
-        } else {
-            console.log('Adding new college:', collegeData);
+    const handleSaveCollege = async (collegeData: Partial<College>) => {
+        try {
+            if (modalState.type === 'edit' && collegeData._id) {
+                await updateCollege({ id: collegeData._id, ...collegeData }).unwrap();
+                toast({ title: "Success", description: "College updated successfully."});
+            } else {
+                await createCollege(collegeData).unwrap();
+                toast({ title: "Success", description: "College added successfully."});
+            }
+            handleCloseModal();
+        } catch (err: any) {
+             toast({ variant: 'destructive', title: "Error", description: err.data?.message || "Failed to save college." });
         }
-        handleCloseModal();
     }
 
     const handleDeleteClick = (college: College) => {
-        setDeleteCollege(college);
+        setCollegeToDelete(college);
     };
 
-    const handleDeleteConfirm = () => {
-        if (deleteCollege) {
-            console.log(`Deleting college ${deleteCollege.id}`);
-            setDeleteCollege(null);
+    const handleDeleteConfirm = async () => {
+        if (collegeToDelete) {
+            try {
+                await deleteCollege(collegeToDelete._id).unwrap();
+                toast({ title: 'Success', description: 'College deleted successfully.'});
+                setCollegeToDelete(null);
+            } catch(err: any) {
+                toast({ variant: 'destructive', title: 'Error', description: err.data?.message || 'Failed to delete college.' });
+            }
         }
     };
 
 
     interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions';
+        accessorKey: keyof TData | 'actions' | '_id';
         header: {
           title: string;
           sortable?: boolean;
@@ -297,7 +315,7 @@ export default function CollegesPage() {
         const organizations = collegesData.filter(c => c.type === 'Organization').length;
         const institutes = collegesData.filter(c => c.type === 'Institute').length;
         return { total, universities, organizations, institutes };
-    }, []);
+    }, [collegesData]);
 
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -312,8 +330,6 @@ export default function CollegesPage() {
         searchTerm: string;
         sort: { id: string; desc: boolean } | null;
     }) => {
-        await new Promise(resolve => setTimeout(resolve, 500));
-
         let filteredColleges = collegesData;
 
         if (options.searchTerm) {
@@ -329,8 +345,10 @@ export default function CollegesPage() {
         if (options.sort) {
             filteredColleges.sort((a, b) => {
                 const key = options.sort!.id as keyof College;
-                if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
-                if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
+                const valA = (a as any)[key] || '';
+                const valB = (b as any)[key] || '';
+                if (valA < valB) return options.sort!.desc ? 1 : -1;
+                if (valA > valB) return options.sort!.desc ? -1 : 1;
                 return 0;
             });
         }
@@ -343,7 +361,7 @@ export default function CollegesPage() {
             data: pageData,
             pageCount: Math.ceil(filteredColleges.length / options.pageSize),
         };
-    }, []);
+    }, [collegesData]);
 
     React.useEffect(() => {
         setIsLoading(true);
@@ -357,7 +375,7 @@ export default function CollegesPage() {
             setPageCount(pageCount);
             setIsLoading(false);
         });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData]);
+    }, [pageIndex, pageSize, searchTerm, sort, fetchData, collegesData]);
 
 
     const handleSort = (columnId: string) => {
@@ -462,7 +480,7 @@ export default function CollegesPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? (
+                        {isLoading || isFetchingColleges ? (
                             Array.from({ length: Number(pageSize) }).map((_, i) => (
                                 <TableRow key={i}>
                                     {columns.map((col, j) => (
@@ -474,7 +492,7 @@ export default function CollegesPage() {
                             ))
                         ) : data.length > 0 ? (
                         data.map((row) => (
-                            <TableRow key={row.id}>
+                            <TableRow key={row._id}>
                             {columns.map((column) => (
                                 <TableCell key={String(column.accessorKey)}>
                                 {column.cell
@@ -509,7 +527,7 @@ export default function CollegesPage() {
                             <SelectValue placeholder={pageSize} />
                             </SelectTrigger>
                             <SelectContent side="top">
-                            {[5, 10, 20, 50].map((size) => (
+                            {[10, 20, 50].map((size) => (
                                 <SelectItem key={size} value={`${size}`}>
                                 {size}
                                 </SelectItem>
@@ -571,19 +589,22 @@ export default function CollegesPage() {
                 modalState={modalState}
                 onOpenChange={(open) => !open && handleCloseModal()}
                 onSave={handleSaveCollege}
+                isSaving={isCreating || isUpdating}
             />
-            {deleteCollege && (
-                <AlertDialog open={!!deleteCollege} onOpenChange={(open) => !open && setDeleteCollege(null)}>
+            {collegeToDelete && (
+                <AlertDialog open={!!collegeToDelete} onOpenChange={(open) => !open && setCollegeToDelete(null)}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete the entry for "{deleteCollege.name}".
+                                This will permanently delete the entry for "{collegeToDelete.name}".
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setDeleteCollege(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                            <AlertDialogCancel onClick={() => setCollegeToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting}>
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -592,5 +613,3 @@ export default function CollegesPage() {
         </>
     )
 }
-
-    

@@ -175,6 +175,29 @@ export const api = createApi({
           ? [...result.map(({ _id }) => ({ type: 'Colleges', id: _id })), { type: 'Colleges', id: 'LIST' }]
           : [{ type: 'Colleges', id: 'LIST' }],
     }),
+    createCollege: builder.mutation({
+        query: (newCollege) => ({
+            url: 'colleges',
+            method: 'POST',
+            body: newCollege,
+        }),
+        invalidatesTags: [{ type: 'Colleges', id: 'LIST' }],
+    }),
+    updateCollege: builder.mutation({
+        query: ({ id, ...patch }) => ({
+            url: `colleges/${id}`,
+            method: 'PUT',
+            body: patch,
+        }),
+        invalidatesTags: (result, error, {id}) => [{ type: 'Colleges', id }, { type: 'Colleges', id: 'LIST' }],
+    }),
+    deleteCollege: builder.mutation({
+        query: (id) => ({
+            url: `colleges/${id}`,
+            method: 'DELETE',
+        }),
+        invalidatesTags: (result, error, id) => [{ type: 'Colleges', id }, { type: 'Colleges', id: 'LIST' }],
+    })
   }),
 });
 
@@ -203,4 +226,7 @@ export const {
     useCreateGovIdTypeMutation,
     useDeleteGovIdTypeMutation,
     useGetCollegesQuery,
+    useCreateCollegeMutation,
+    useUpdateCollegeMutation,
+    useDeleteCollegeMutation,
 } = api;
