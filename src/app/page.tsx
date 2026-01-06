@@ -21,7 +21,7 @@ import {
 import { useAuth, type Role } from '@/lib/auth';
 import { Icons } from '@/components/icons';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useCheckDbConnectionMutation } from '@/services/api';
@@ -33,9 +33,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const [checkDbConnection, { isLoading, isSuccess, isError, data, error }] = useCheckDbConnectionMutation();
+  
+  useEffect(() => {
+    const testId = searchParams.get('testId');
+    if (testId) {
+        localStorage.setItem('proctorlock_test_enroll', testId);
+    }
+  }, [searchParams]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

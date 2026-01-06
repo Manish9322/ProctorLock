@@ -14,11 +14,13 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpenCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 type ExamStatus = 'Upcoming' | 'Live' | 'Completed' | 'Missed';
 
 const examsData = [
   {
+    _id: '66a4f971e4f3a7a9a1e0b234', // Example MongoDB ObjectId
     id: 'CS101-FINAL',
     title: 'Introduction to Computer Science - Final Exam',
     status: 'Upcoming' as ExamStatus,
@@ -26,6 +28,7 @@ const examsData = [
     duration: '60 minutes',
   },
   {
+    _id: '66a4f971e4f3a7a9a1e0b235',
     id: 'MA203-MIDTERM',
     title: 'Calculus II - Midterm',
     status: 'Live' as ExamStatus,
@@ -33,6 +36,7 @@ const examsData = [
     duration: '90 minutes',
   },
   {
+    _id: '66a4f971e4f3a7a9a1e0b236',
     id: 'PHY201-QUIZ3',
     title: 'University Physics I - Quiz 3',
     status: 'Completed' as ExamStatus,
@@ -40,6 +44,7 @@ const examsData = [
     duration: '30 minutes',
   },
   {
+    _id: '66a4f971e4f3a7a9a1e0b237',
     id: 'CHEM101-LAB',
     title: 'Chemistry Lab Practical',
     status: 'Missed' as ExamStatus,
@@ -98,9 +103,20 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
 
 export default function CandidateDashboard() {
   const [isClient, setIsClient] = useState(false);
+  const [highlightedExam, setHighlightedExam] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
+    const enrolledTestId = localStorage.getItem('proctorlock_test_enroll');
+    if (enrolledTestId) {
+        setHighlightedExam(enrolledTestId);
+        // Optional: scroll to the highlighted exam
+        const element = document.getElementById(`exam-${enrolledTestId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        localStorage.removeItem('proctorlock_test_enroll');
+    }
   }, []);
 
   const getStatusBadgeVariant = (status: ExamStatus) => {
@@ -129,7 +145,14 @@ export default function CandidateDashboard() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pt-4">
         {examsData.map((exam) => (
-          <Card key={exam.id} className="flex flex-col">
+          <Card
+            key={exam._id}
+            id={`exam-${exam._id}`}
+            className={cn(
+                "flex flex-col transition-all",
+                highlightedExam === exam._id && "ring-2 ring-primary ring-offset-2"
+            )}
+           >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-medium">

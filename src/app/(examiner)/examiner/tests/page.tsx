@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle, UserPlus, Eye, MessageSquare } from 'lucide-react';
+import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle, UserPlus, Eye, MessageSquare, Link as LinkIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,12 +46,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGetTestsQuery } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function TestsPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
 
     // RTK Query
     const { data: testsData = [], isLoading: isFetchingTests } = useGetTestsQuery({});
@@ -70,6 +72,15 @@ export default function TestsPage() {
     const [viewingTest, setViewingTest] = React.useState<Test | null>(null);
     
     const searchableColumns: (keyof Test)[] = ['id', 'title'];
+
+    const handleCopyLink = (testId: string) => {
+        const url = `${window.location.origin}/?testId=${testId}`;
+        navigator.clipboard.writeText(url);
+        toast({
+            title: "Link Copied",
+            description: "The enrollment link has been copied to your clipboard.",
+        });
+    }
 
      interface DataTableColumnDef<TData> {
         accessorKey: keyof TData | 'actions' | '_id';
@@ -183,7 +194,19 @@ export default function TestsPage() {
         accessorKey: 'actions',
         header: { title: 'Actions' },
         cell: ({ row }) => (
-          <div className="text-right">
+          <div className="text-right flex items-center justify-end">
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => handleCopyLink(row.original._id)}>
+                            <LinkIcon className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Copy Enrollment Link</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button aria-haspopup="true" size="icon" variant="ghost">
