@@ -20,7 +20,8 @@ import {
     Search,
     PlusCircle,
     Trash,
-    Edit
+    Edit,
+    Upload
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { QuestionDialog } from '@/components/examiner/create-test-form';
 import type { Question } from '@/components/examiner/create-test-form';
+import { Label } from '@/components/ui/label';
 
 
 const questionsData: Question[] = [
@@ -267,20 +269,45 @@ export default function QuestionBankPage() {
 
     const PageContent = () => (
         <div className="space-y-4">
-             <div className="flex items-center justify-between">
-                <div>
+            <div>
                 <h1 className="text-2xl font-bold">Question Bank</h1>
                 <p className="text-muted-foreground">
                     Manage the central repository of questions for all tests.
                 </p>
-                </div>
-                 <QuestionDialog onSave={handleSaveQuestion}>
-                     <Button>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Add Question
-                    </Button>
-                </QuestionDialog>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Questions</CardTitle>
+                    <CardDescription>Add questions individually or bulk upload via CSV.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 flex flex-col items-start">
+                        <Label>Add Individually</Label>
+                        <QuestionDialog onSave={handleSaveQuestion}>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4"/>
+                                Add New Question
+                            </Button>
+                        </QuestionDialog>
+                        <p className="text-xs text-muted-foreground">
+                            Manually add one question at a time.
+                        </p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Bulk Upload</Label>
+                        <div className="flex gap-2">
+                            <Input type="file" className="flex-grow" accept=".csv"/>
+                            <Button>
+                                <Upload className="mr-2 h-4 w-4" /> Upload CSV
+                            </Button>
+                        </div>
+                         <p className="text-xs text-muted-foreground">
+                            CSV must contain `type`, `text`, `marks`, `options`, and `correctAnswer` columns. <a href="#" className="underline">Download template</a>.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
             
             <Card>
                 <CardHeader>
