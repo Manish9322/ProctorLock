@@ -42,7 +42,7 @@ type Question = {
 
 type QuestionStatus = 'unvisited' | 'answered' | 'unanswered' | 'review' | 'answered_review';
 
-type SubmissionDetails = {
+export type SubmissionDetails = {
     totalQuestions: number;
     attempted: number;
     unattempted: number;
@@ -94,6 +94,7 @@ const QuestionNavigator = ({
   markedForReview,
   onSelectQuestion,
   isSubmitting,
+  onSubmitClick,
 }: {
   questions: Question[];
   currentQuestionIndex: number;
@@ -101,6 +102,7 @@ const QuestionNavigator = ({
   markedForReview: { [key: string]: boolean };
   onSelectQuestion: (index: number) => void;
   isSubmitting: boolean;
+  onSubmitClick: () => void;
 }) => {
   const getStatus = (index: number): QuestionStatus => {
     const questionId = questions[index].id;
@@ -155,42 +157,41 @@ const QuestionNavigator = ({
         </div>
       </CardContent>
        <CardFooter className="mt-auto flex-col items-stretch p-4 gap-2">
-            <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? 'Submitting...' : 'Submit Exam'}
-                </Button>
-            </AlertDialogTrigger>
+            <Button onClick={onSubmitClick} variant="destructive" size="sm" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? 'Submitting...' : 'Submit Exam'}
+            </Button>
         </CardFooter>
     </Card>
   );
 };
 
 
-export function ExamSession({ examId }: { examId: string }) {
-  // Proctoring State
+export function ExamSession({
+  examId,
+  onTerminate,
+  onSuccessfulSubmit,
+  setUnansweredQuestionsCount,
+}: {
+  examId: string;
+  onTerminate: (reason: string) => void;
+  onSuccessfulSubmit: (details: SubmissionDetails) => void;
+  setUnansweredQuestionsCount: (count: number) => void;
+}) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [isTerminated, setIsTerminated] = useState(false);
-  const [terminationReason, setTerminationReason] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Exam State
   const [questions] = useState<Question[]>(mockQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [markedForReview, setMarkedForReview] = useState<{ [key: string]: boolean }>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
 
   const terminateExam = useCallback((reason: string) => {
-    setTerminationReason(reason);
-    setIsTerminated(true);
+    onTerminate(reason);
     if (document.fullscreenElement) {
       document.exitFullscreen();
     }
-  }, []);
+  }, [onTerminate]);
 
   const addLog = useCallback((log: Omit<ActivityLog, 'timestamp'>) => {
     const newLog = { ...log, timestamp: new Date().toISOString() };
@@ -198,9 +199,7 @@ export function ExamSession({ examId }: { examId: string }) {
     console.log('Activity Log:', newLog);
   }, []);
   
-  // Proctoring Effects (focus, fullscreen, webcam, etc.)
   useEffect(() => {
-    if (isSubmitted) return;
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         addLog({ type: 'focus', event: 'Exited fullscreen' });
@@ -228,18 +227,22 @@ export function ExamSession({ examId }: { examId: string }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [addLog, terminateExam, isSubmitted]);
+  }, [addLog, terminateExam]);
 
-  // Exam Timer Effect
   useEffect(() => {
-    if (isSubmitted || isTerminated) return;
     if (timeLeft <= 0) {
-      handleConfirmSubmit();
+      handleFinalSubmit();
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, isSubmitted, isTerminated]);
+  }, [timeLeft]);
+
+  useEffect(() => {
+    const count = questions.length - Object.keys(answers).length;
+    setUnansweredQuestionsCount(count);
+  }, [answers, questions.length, setUnansweredQuestionsCount]);
+
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -253,170 +256,77 @@ export function ExamSession({ examId }: { examId: string }) {
   const goToNext = () => setCurrentQuestionIndex(prev => Math.min(prev + 1, questions.length - 1));
   const goToPrevious = () => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
 
-  const unansweredQuestions = questions.length - Object.keys(answers).length;
-
-  const handleConfirmSubmit = async () => {
-    setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const details = {
+  const handleFinalSubmit = async () => {
+    const details: SubmissionDetails = {
         totalQuestions: questions.length,
         attempted: Object.keys(answers).length,
-        unattempted: unansweredQuestions,
+        unattempted: questions.length - Object.keys(answers).length,
         submissionTime: new Date(),
     };
-    setSubmissionDetails(details);
-    setIsSubmitted(true);
-    setIsSubmitting(false);
+    onSuccessfulSubmit(details);
 
     if (document.fullscreenElement) {
       document.exitFullscreen();
     }
   };
 
-  if (isTerminated) {
-    return (
-      <AlertDialog open={isTerminated}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-6 w-6 text-destructive" />
-              {timeLeft <= 0 ? "Time's Up" : "Exam Terminated"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{timeLeft <= 0 ? "Time's up! Your exam has been automatically submitted." : terminationReason}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => (window.location.href = '/dashboard')}>
-              Return to Dashboard
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
-
-  if (isSubmitted && submissionDetails) {
-    return (
-        <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
-            <Card className="w-full max-w-2xl">
-                <CardHeader className="items-center text-center">
-                    <CheckCircle2 className="h-16 w-16 text-green-500 mb-2"/>
-                    <CardTitle className="text-2xl">Exam Submitted Successfully</CardTitle>
-                    <CardDescription>Your responses have been recorded.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="rounded-md border divide-y">
-                        <div className="flex justify-between p-3">
-                            <span className="text-muted-foreground">Total Questions</span>
-                            <span className="font-medium">{submissionDetails.totalQuestions}</span>
-                        </div>
-                        <div className="flex justify-between p-3">
-                            <span className="text-muted-foreground">Attempted</span>
-                            <span className="font-medium">{submissionDetails.attempted}</span>
-                        </div>
-                         <div className="flex justify-between p-3">
-                            <span className="text-muted-foreground">Unattempted</span>
-                            <span className="font-medium">{submissionDetails.unattempted}</span>
-                        </div>
-                         <div className="flex justify-between p-3">
-                            <span className="text-muted-foreground">Submission Time</span>
-                            <span className="font-medium">{submissionDetails.submissionTime.toLocaleString()}</span>
-                        </div>
-                    </div>
-                    <p className="text-center text-sm text-muted-foreground">You may now close this window or return to your dashboard.</p>
-                </CardContent>
-                <CardFooter className="justify-center">
-                    <Button onClick={() => (window.location.href = '/dashboard')}>Return to Dashboard</Button>
-                </CardFooter>
-            </Card>
-        </div>
-    )
-  }
-
-
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <AlertDialog>
-        <div className="flex h-screen flex-col bg-muted/40">
-            <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
-                <h1 className="text-lg font-bold">Exam: {examId}</h1>
-                <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
-            </header>
-            <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-y-auto">
-                {/* Main Content */}
-                <div className="lg:col-span-3">
-                    <Card className="h-full flex flex-col">
-                        <CardHeader>
-                            <CardTitle>Question {currentQuestionIndex + 1} of {questions.length}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-1">
-                            <p className="mb-6 text-base">{currentQuestion.text}</p>
-                            <RadioGroup 
-                                value={answers[currentQuestion.id] || ''}
-                                onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
-                            >
-                                {currentQuestion.options.map((option, index) => (
-                                    <Label key={index} className="flex items-center gap-4 rounded-md border p-4 hover:bg-accent cursor-pointer has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                    <RadioGroupItem value={option} id={`q${currentQuestion.id}-opt${index}`} />
-                                    <span>{option}</span>
-                                    </Label>
-                                ))}
-                            </RadioGroup>
-                        </CardContent>
-                        <div className="border-t p-4 flex justify-between items-center">
-                            <Button variant="outline" onClick={handleMarkForReview}>
-                                <Bookmark className={cn("mr-2 h-4 w-4", markedForReview[currentQuestion.id] && "fill-current")}/>
-                                {markedForReview[currentQuestion.id] ? 'Unmark Review' : 'Mark for Review'}
-                            </Button>
-                            <div className="flex gap-2">
-                                <Button variant="outline" onClick={goToPrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4"/> Previous</Button>
-                                <Button onClick={goToNext} disabled={currentQuestionIndex === questions.length - 1}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
-                            </div>
+    <div className="flex h-screen flex-col bg-muted/40">
+        <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
+            <h1 className="text-lg font-bold">Exam: {examId}</h1>
+            <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
+        </header>
+        <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-y-auto">
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+                <Card className="h-full flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Question {currentQuestionIndex + 1} of {questions.length}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                        <p className="mb-6 text-base">{currentQuestion.text}</p>
+                        <RadioGroup 
+                            value={answers[currentQuestion.id] || ''}
+                            onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+                        >
+                            {currentQuestion.options.map((option, index) => (
+                                <Label key={index} className="flex items-center gap-4 rounded-md border p-4 hover:bg-accent cursor-pointer has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                <RadioGroupItem value={option} id={`q${currentQuestion.id}-opt${index}`} />
+                                <span>{option}</span>
+                                </Label>
+                            ))}
+                        </RadioGroup>
+                    </CardContent>
+                    <div className="border-t p-4 flex justify-between items-center">
+                        <Button variant="outline" onClick={handleMarkForReview}>
+                            <Bookmark className={cn("mr-2 h-4 w-4", markedForReview[currentQuestion.id] && "fill-current")}/>
+                            {markedForReview[currentQuestion.id] ? 'Unmark Review' : 'Mark for Review'}
+                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={goToPrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4"/> Previous</Button>
+                            <Button onClick={goToNext} disabled={currentQuestionIndex === questions.length - 1}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
                         </div>
-                    </Card>
-                </div>
-                
-                {/* Navigator */}
-                <div className="lg:col-span-1 h-full hidden lg:block">
-                    <QuestionNavigator
-                        questions={questions}
-                        currentQuestionIndex={currentQuestionIndex}
-                        answers={answers}
-                        markedForReview={markedForReview}
-                        onSelectQuestion={setCurrentQuestionIndex}
-                        isSubmitting={isSubmitting}
-                    />
-                </div>
-            </main>
-            <video ref={videoRef} autoPlay muted playsInline className="hidden" />
-            <canvas ref={canvasRef} className="hidden" />
-        </div>
-        
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    You cannot make any changes after submitting.
-                    {unansweredQuestions > 0 && (
-                        <span className="font-semibold block mt-2">
-                            You have {unansweredQuestions} unanswered question{unansweredQuestions > 1 ? 's' : ''}.
-                        </span>
-                    )}
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                    onClick={handleConfirmSubmit} 
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    </div>
+                </Card>
+            </div>
+            
+            {/* Navigator */}
+            <div className="lg:col-span-1 h-full hidden lg:block">
+                <QuestionNavigator
+                    questions={questions}
+                    currentQuestionIndex={currentQuestionIndex}
+                    answers={answers}
+                    markedForReview={markedForReview}
+                    onSelectQuestion={setCurrentQuestionIndex}
+                    isSubmitting={false} // This is now controlled by parent
+                    onSubmitClick={() => {}} // This is now controlled by parent
+                />
+            </div>
+        </main>
+        <video ref={videoRef} autoPlay muted playsInline className="hidden" />
+        <canvas ref={canvasRef} className="hidden" />
+    </div>
   );
 }
-
