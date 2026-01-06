@@ -20,10 +20,12 @@ import {
 } from '@/components/ui/select';
 import { useAuth, type Role } from '@/lib/auth';
 import { Icons } from '@/components/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import { useCheckDbConnectionMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const [role, setRole] = useState<Role>('candidate');
@@ -31,6 +33,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const [checkDbConnection, { isLoading, isSuccess, isError, data, error }] = useCheckDbConnectionMutation();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +50,34 @@ export default function LoginPage() {
     }
   }
 
+  const handleTestConnection = async () => {
+    await checkDbConnection({});
+  }
+
+  useEffect(() => {
+    if (isSuccess && data) {
+      toast({
+        title: 'Success',
+        description: data.message,
+      });
+    }
+    if (isError && error) {
+        const errorData = (error as any).data;
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: errorData?.message || 'An unknown error occurred.',
+        });
+    }
+  }, [isSuccess, isError, data, error, toast]);
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <div className="absolute top-4 left-4">
+        <Button onClick={handleTestConnection} disabled={isLoading}>
+          {isLoading ? 'Testing...' : 'Test DB Connection'}
+        </Button>
+      </div>
       <div className="mb-8 flex items-center gap-2 text-2xl font-bold">
         <Icons.Logo className="h-8 w-8 text-primary" />
         <span>ProctorLock</span>

@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import StoreProvider from '@/components/StoreProvider';
 
 export const metadata: Metadata = {
   title: 'ProctorLock',
@@ -25,17 +26,19 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </ThemeProvider>
+        <StoreProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </ThemeProvider>
+        </StoreProvider>
       </body>
     </html>
   );
