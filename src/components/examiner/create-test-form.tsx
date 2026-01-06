@@ -70,6 +70,9 @@ import { RadioGroup } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { useCreateTestMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const steps = [
   { id: 'details', name: 'Test Details', icon: FileText },
@@ -91,23 +94,21 @@ export type Question = {
 
 // Form State Types
 type TestDetails = {
-  name: string;
+  title: string;
   description: string;
-  id: string;
 };
 
 type TestScheduling = {
   date: Date | undefined;
-  timezone: string;
   startTime: string;
   endTime: string;
   duration: number;
-  gracePeriod: number;
 };
 
 type TestQuestions = {
     mcqCount: number;
     descriptiveCount: number;
+    totalMarks: number;
 }
 
 type TestRules = {
@@ -122,24 +123,25 @@ type TestRules = {
 
 export function CreateTestForm() {
   const [currentStep, setCurrentStep] = useState(0);
+  const { toast } = useToast();
+  const router = useRouter();
+  const [createTest, { isLoading: isCreatingTest }] = useCreateTestMutation();
 
   // State lifted from child components
   const [testDetails, setTestDetails] = useState<TestDetails>({
-    name: 'Mid-Term Exam for CS-101',
+    title: 'Mid-Term Exam for CS-101',
     description: 'A brief description of the test, its purpose, and instructions for candidates.',
-    id: 'CS101-MT-2024',
   });
   const [testScheduling, setTestScheduling] = useState<TestScheduling>({
     date: new Date(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     startTime: '09:00',
     endTime: '17:00',
     duration: 60,
-    gracePeriod: 5,
   });
   const [testQuestions, setTestQuestions] = useState<TestQuestions>({
     mcqCount: 10,
     descriptiveCount: 2,
+    totalMarks: 20, // 10*1 + 2*5
   });
   const [testRules, setTestRules] = useState<TestRules>({
     fullscreen: true,
@@ -152,6 +154,43 @@ export function CreateTestForm() {
   });
   
   const allState = { testDetails, testScheduling, testQuestions, testRules };
+
+  const handlePublish = async () => {
+    const finalTestData = {
+        title: testDetails.title,
+        description: testDetails.description,
+        marks: testQuestions.totalMarks,
+        createdBy: 'examiner@example.com', // This should be dynamic in a real app
+        scheduling: {
+            date: testScheduling.date ? format(testScheduling.date, 'yyyy-MM-dd') : '',
+            startTime: testScheduling.startTime,
+            endTime: testScheduling.endTime,
+            duration: testScheduling.duration,
+        },
+        questions: {
+            mcqCount: testQuestions.mcqCount,
+            descriptiveCount: testQuestions.descriptiveCount,
+        },
+        rules: {
+            ...testRules
+        }
+    };
+
+    try {
+        await createTest(finalTestData).unwrap();
+        toast({
+            title: "Test Submitted",
+            description: "Your test has been sent for approval.",
+        });
+        router.push('/examiner/tests');
+    } catch (err: any) {
+        toast({
+            variant: "destructive",
+            title: "Failed to Submit Test",
+            description: err.data?.message || "An unexpected error occurred.",
+        });
+    }
+  }
 
 
   const goToNextStep = () => {
@@ -245,8 +284,10 @@ export function CreateTestForm() {
               </Button>
             ) : (
               <div className="flex gap-2">
-                  <Button variant="secondary">Save as Draft</Button>
-                  <Button>Submit for Approval</Button>
+                  <Button variant="secondary" disabled={isCreatingTest}>Save as Draft</Button>
+                  <Button onClick={handlePublish} disabled={isCreatingTest}>
+                    {isCreatingTest ? 'Submitting...' : 'Submit for Approval'}
+                  </Button>
               </div>
             )}
           </CardFooter>
@@ -257,15 +298,11 @@ export function CreateTestForm() {
 }
 
 function TestDetailsStep({ details, setDetails }: { details: TestDetails, setDetails: React.Dispatch<React.SetStateAction<TestDetails>>}) {
-    const handleGenerateId = () => {
-        const randomId = `TEST-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        setDetails(prev => ({...prev, id: randomId}));
-    }
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="test-name">Test Name</Label>
-        <Input id="test-name" value={details.name} onChange={(e) => setDetails(prev => ({...prev, name: e.target.value}))} placeholder="e.g., Mid-Term Exam for CS-101" />
+        <Input id="test-name" value={details.title} onChange={(e) => setDetails(prev => ({...prev, title: e.target.value}))} placeholder="e.g., Mid-Term Exam for CS-101" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="test-description">Description</Label>
@@ -276,16 +313,6 @@ function TestDetailsStep({ details, setDetails }: { details: TestDetails, setDet
           placeholder="Provide a brief description of the test, its purpose, and instructions for candidates."
           rows={4}
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="test-id">Test ID / Code</Label>
-        <div className="flex items-center gap-2">
-          <Input id="test-id" value={details.id} readOnly />
-          <Button variant="outline" onClick={handleGenerateId}>Generate</Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          A unique ID for this test. You can auto-generate one.
-        </p>
       </div>
     </div>
   );
@@ -333,25 +360,16 @@ function TestSchedulingStep({ scheduling, setScheduling }: { scheduling: TestSch
         setScheduling(prev => ({ ...prev, [field]: value }));
     }
     
-    const handleNumberChange = (field: 'duration' | 'gracePeriod', value: string) => {
+    const handleNumberChange = (field: 'duration', value: string) => {
         setScheduling(prev => ({...prev, [field]: parseInt(value) || 0 }))
     }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="exam-date">Exam Date</Label>
           <DatePicker date={scheduling.date} setDate={handleDateChange} />
         </div>
-        <div className="space-y-2">
-          <Label>Timezone</Label>
-          <Input
-            value={scheduling.timezone}
-            onChange={(e) => setScheduling(prev => ({...prev, timezone: e.target.value}))}
-          />
-        </div>
-      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="start-time">Start Time</Label>
@@ -362,14 +380,10 @@ function TestSchedulingStep({ scheduling, setScheduling }: { scheduling: TestSch
           <Input id="end-time" type="time" value={scheduling.endTime} onChange={(e) => handleTimeChange('endTime', e.target.value)} />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
           <Label htmlFor="duration">Duration (minutes)</Label>
           <Input id="duration" type="number" value={scheduling.duration} onChange={e => handleNumberChange('duration', e.target.value)} placeholder="e.g., 60" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="grace-period">Grace Period (minutes)</Label>
-          <Input id="grace-period" type="number" value={scheduling.gracePeriod} onChange={e => handleNumberChange('gracePeriod', e.target.value)} placeholder="e.g., 5" />
         </div>
       </div>
     </div>
@@ -530,13 +544,23 @@ export function QuestionDialog({
 }
 
 function TestQuestionsStep({ questions, setQuestions }: { questions: TestQuestions, setQuestions: React.Dispatch<React.SetStateAction<TestQuestions>>}) {
+    
+    const handleCountChange = (field: 'mcqCount' | 'descriptiveCount', value: string) => {
+        const count = parseInt(value) || 0;
+        setQuestions(prev => {
+            const newCounts = {...prev, [field]: count };
+            const newTotalMarks = (newCounts.mcqCount * 1) + (newCounts.descriptiveCount * 5);
+            return { ...newCounts, totalMarks: newTotalMarks };
+        });
+    }
+
     return (
         <div className="space-y-6">
             <Alert>
                 <BookCopy className="h-4 w-4" />
                 <AlertTitle>Question Bank Integration</AlertTitle>
                 <AlertDescription>
-                    Questions will be randomly selected from the central Question Bank managed by the admin. Please specify the number of questions for each type.
+                    Questions will be randomly selected from the central Question Bank. Please specify the number of questions for each type and total marks for the test.
                 </AlertDescription>
             </Alert>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -546,7 +570,7 @@ function TestQuestionsStep({ questions, setQuestions }: { questions: TestQuestio
                         id="mcq-count"
                         type="number" 
                         value={questions.mcqCount} 
-                        onChange={e => setQuestions(prev => ({ ...prev, mcqCount: parseInt(e.target.value) || 0 }))}
+                        onChange={e => handleCountChange('mcqCount', e.target.value)}
                         placeholder="e.g., 20" 
                     />
                 </div>
@@ -556,9 +580,22 @@ function TestQuestionsStep({ questions, setQuestions }: { questions: TestQuestio
                         id="descriptive-count"
                         type="number" 
                         value={questions.descriptiveCount} 
-                        onChange={e => setQuestions(prev => ({ ...prev, descriptiveCount: parseInt(e.target.value) || 0 }))}
+                        onChange={e => handleCountChange('descriptiveCount', e.target.value)}
                         placeholder="e.g., 5" 
                     />
+                </div>
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="total-marks">Total Marks</Label>
+                    <Input 
+                        id="total-marks"
+                        type="number" 
+                        value={questions.totalMarks} 
+                        onChange={e => setQuestions(prev => ({ ...prev, totalMarks: parseInt(e.target.value) || 0 }))}
+                        placeholder="e.g., 100" 
+                    />
+                     <p className="text-xs text-muted-foreground">Calculated: {questions.mcqCount * 1 + questions.descriptiveCount * 5} (1 mark/MCQ, 5 marks/Desc)</p>
                 </div>
             </div>
             <div className="pt-2">
@@ -693,11 +730,9 @@ function ReviewItem({ label, value, onEdit }: {label: string, value: React.React
 function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, onEdit: (index: number) => void}) {
     const { testDetails, testScheduling, testQuestions, testRules } = allState;
 
-    // Default marks: 1 for MCQ, 5 for Descriptive
-    const totalMarks = (testQuestions.mcqCount * 1) + (testQuestions.descriptiveCount * 5);
     const totalQuestions = testQuestions.mcqCount + testQuestions.descriptiveCount;
 
-    const isReadyForPublish = testDetails.name && totalQuestions > 0;
+    const isReadyForPublish = testDetails.title && totalQuestions > 0 && testQuestions.totalMarks > 0;
 
     return (
         <div className="space-y-8">
@@ -708,8 +743,9 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                     <AlertDescription>
                         The test is missing required information. Please ensure the following are complete:
                         <ul className="list-disc pl-5 mt-2">
-                            {!testDetails.name && <li>Test Name</li>}
+                            {!testDetails.title && <li>Test Title</li>}
                             {totalQuestions === 0 && <li>Number of questions must be greater than zero</li>}
+                            {testQuestions.totalMarks === 0 && <li>Total marks must be greater than zero</li>}
                         </ul>
                     </AlertDescription>
                 </Alert>
@@ -720,9 +756,8 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                     <Button variant="outline" size="sm" onClick={() => onEdit(0)}>Edit</Button>
                 </CardHeader>
                 <CardContent className="divide-y">
-                     <ReviewItem label="Test Name" value={testDetails.name} />
+                     <ReviewItem label="Test Title" value={testDetails.title} />
                      <ReviewItem label="Test Description" value={testDetails.description} />
-                     <ReviewItem label="Test ID" value={<Badge variant="secondary">{testDetails.id}</Badge>} />
                 </CardContent>
             </Card>
 
@@ -733,9 +768,8 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                 </CardHeader>
                 <CardContent className="divide-y">
                      <ReviewItem label="Exam Date" value={testScheduling.date ? format(testScheduling.date, 'PPP') : 'Not set'} />
-                     <ReviewItem label="Time Window" value={`${testScheduling.startTime} - ${testScheduling.endTime} (${testScheduling.timezone})`} />
+                     <ReviewItem label="Time Window" value={`${testScheduling.startTime} - ${testScheduling.endTime}`} />
                      <ReviewItem label="Duration" value={`${testScheduling.duration} minutes`} />
-                     <ReviewItem label="Grace Period" value={`${testScheduling.gracePeriod} minutes`} />
                 </CardContent>
             </Card>
             
@@ -748,7 +782,7 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                      <ReviewItem label="MCQs" value={`${testQuestions.mcqCount}`} />
                      <ReviewItem label="Descriptive Questions" value={`${testQuestions.descriptiveCount}`} />
                      <ReviewItem label="Total Questions" value={totalQuestions} />
-                     <ReviewItem label="Total Marks" value={`${totalMarks} (assuming 1 mark/MCQ, 5 marks/Descriptive)`} />
+                     <ReviewItem label="Total Marks" value={testQuestions.totalMarks} />
                 </CardContent>
             </Card>
             

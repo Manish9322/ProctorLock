@@ -45,23 +45,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGetTestsQuery } from '@/services/api';
 
-
-const testsData: Test[] = [
-  { id: 'CS101-FINAL', title: 'Intro to CS - Final', description: 'Final exam for Introduction to Computer Science.', candidates: 150, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-08-15', startTime: '09:00', endTime: '12:00', duration: 120 }, questions: { mcqCount: 40, descriptiveCount: 5 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
-  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', description: 'Midterm exam for Calculus II.', candidates: 88, marks: 50, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-08-10', startTime: '14:00', endTime: '16:00', duration: 90 }, questions: { mcqCount: 20, descriptiveCount: 2 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', description: 'Quiz 3 for University Physics I.', candidates: 120, marks: 25, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-25', startTime: '10:00', endTime: '10:30', duration: 25 }, questions: { mcqCount: 25, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: false, snapshotInterval: '5m' } },
-  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', description: 'Final exam for General Chemistry.', candidates: 0, marks: 100, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-20', startTime: '13:00', endTime: '16:00', duration: 180 }, questions: { mcqCount: 50, descriptiveCount: 10 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
-  { id: 'HIST202-PAPER', title: 'American History II - Paper', description: 'Paper for American History II.', candidates: 75, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com', scheduling: { date: '2024-08-18', startTime: '09:00', endTime: '17:00', duration: 480 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
-  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', description: 'Midterm exam for Abnormal Psychology.', candidates: 95, marks: 75, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-30', startTime: '11:00', endTime: '12:30', duration: 75 }, questions: { mcqCount: 60, descriptiveCount: 3 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 200, marks: 20, status: 'Active', approval: 'Rejected', rejectionReason: 'Test duration is too short for 20 questions.', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ART-HISTORY', title: 'Art History - Final Project', description: 'Final project for Art History.', candidates: 40, marks: 150, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com', scheduling: { date: '2024-09-01', startTime: '09:00', endTime: '17:00', duration: 1440 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
-];
 
 export default function TestsPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+
+    // RTK Query
+    const { data: testsData = [], isLoading: isFetchingTests } = useGetTestsQuery({});
 
     // Search params
     const page = searchParams.get('page') ?? '1';
@@ -79,7 +72,7 @@ export default function TestsPage() {
     const searchableColumns: (keyof Test)[] = ['id', 'title'];
 
      interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions';
+        accessorKey: keyof TData | 'actions' | '_id';
         header: {
           title: string;
           sortable?: boolean;
@@ -89,12 +82,12 @@ export default function TestsPage() {
 
     const columns: DataTableColumnDef<Test>[] = [
       {
-        accessorKey: 'id',
+        accessorKey: '_id',
         header: {
           title: 'Test ID',
           sortable: true,
         },
-        cell: ({ row }) => <div className="font-medium">{row.getValue('id')}</div>,
+        cell: ({ row }) => <div className="font-medium truncate max-w-28">{row.getValue('_id')}</div>,
       },
       {
         accessorKey: 'title',
@@ -251,7 +244,7 @@ export default function TestsPage() {
         const finished = testsData.filter(t => t.status === 'Finished').length;
         const draft = testsData.filter(t => t.status === 'Draft').length;
         return { total, active, finished, draft };
-    }, []);
+    }, [testsData]);
 
     // Debounce search term
     React.useEffect(() => {
@@ -268,16 +261,14 @@ export default function TestsPage() {
         searchTerm: string;
         sort: { id: string; desc: boolean } | null;
     }) => {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
         let filteredTests = testsData;
 
         if (options.searchTerm) {
             const term = options.searchTerm.toLowerCase();
             filteredTests = testsData.filter(
-                (test) =>
-                test.id.toLowerCase().includes(term) ||
-                test.title.toLowerCase().includes(term)
+                (test: Test) =>
+                (test.id && test.id.toLowerCase().includes(term)) ||
+                (test.title && test.title.toLowerCase().includes(term))
             );
         }
 
@@ -298,7 +289,7 @@ export default function TestsPage() {
             data: pageData,
             pageCount: Math.ceil(filteredTests.length / options.pageSize),
         };
-    }, []);
+    }, [testsData]);
 
     // Fetch data effect
     React.useEffect(() => {
@@ -313,7 +304,7 @@ export default function TestsPage() {
             setPageCount(pageCount);
             setIsLoading(false);
         });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData]);
+    }, [pageIndex, pageSize, searchTerm, sort, fetchData, testsData]);
 
 
     const handleSort = (columnId: string) => {
@@ -392,7 +383,7 @@ export default function TestsPage() {
                         <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder={`Search ${searchableColumns.join(', ')}...`}
+                            placeholder={`Search ID, title...`}
                             value={debouncedSearchTerm}
                             onChange={(e) => setDebouncedSearchTerm(e.target.value)}
                             className="pl-10 w-full md:w-80"
@@ -421,7 +412,7 @@ export default function TestsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
+                            {isLoading || isFetchingTests ? (
                                 Array.from({ length: Number(pageSize) }).map((_, i) => (
                                     <TableRow key={i}>
                                         {columns.map((col, j) => (
@@ -432,8 +423,8 @@ export default function TestsPage() {
                                     </TableRow>
                                 ))
                             ) : data.length > 0 ? (
-                            data.map((row, index) => (
-                                <TableRow key={index}>
+                            data.map((row: Test, index) => (
+                                <TableRow key={row._id || index}>
                                 {columns.map((column) => (
                                     <TableCell key={String(column.accessorKey)}>
                                     {column.cell
