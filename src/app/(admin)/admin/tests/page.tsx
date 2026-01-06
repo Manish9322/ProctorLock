@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, ThumbsUp, ThumbsDown, BookCopy, Eye } from 'lucide-react';
+import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, ThumbsUp, ThumbsDown, BookCopy, Eye, Trash } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,11 +41,25 @@ import { TestDetailsCard } from '@/components/examiner/test-details-card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { useGetTestsQuery, useUpdateTestMutation, useDeleteTestMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 type TestStatus = 'Active' | 'Finished' | 'Draft';
 type ApprovalStatus = 'Approved' | 'Pending' | 'Rejected';
 
 export type Test = {
+    _id: string;
     id: string;
     title: string;
     description: string;
@@ -73,22 +87,18 @@ export type Test = {
     }
 };
 
-const testsData: Test[] = [
-  { id: 'CS101-FINAL', title: 'Intro to CS - Final', description: 'Final exam for Introduction to Computer Science.', candidates: 150, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-08-15', startTime: '09:00', endTime: '12:00', duration: 120 }, questions: { mcqCount: 40, descriptiveCount: 5 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
-  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', description: 'Midterm exam for Calculus II.', candidates: 88, marks: 50, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-08-10', startTime: '14:00', endTime: '16:00', duration: 90 }, questions: { mcqCount: 20, descriptiveCount: 2 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', description: 'Quiz 3 for University Physics I.', candidates: 120, marks: 25, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-25', startTime: '10:00', endTime: '10:30', duration: 25 }, questions: { mcqCount: 25, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: false, snapshotInterval: '5m' } },
-  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', description: 'Final exam for General Chemistry.', candidates: 0, marks: 100, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-20', startTime: '13:00', endTime: '16:00', duration: 180 }, questions: { mcqCount: 50, descriptiveCount: 10 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
-  { id: 'HIST202-PAPER', title: 'American History II - Paper', description: 'Paper for American History II.', candidates: 75, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com', scheduling: { date: '2024-08-18', startTime: '09:00', endTime: '17:00', duration: 480 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
-  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', description: 'Midterm exam for Abnormal Psychology.', candidates: 95, marks: 75, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-30', startTime: '11:00', endTime: '12:30', duration: 75 }, questions: { mcqCount: 60, descriptiveCount: 3 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 0, marks: 20, status: 'Draft', approval: 'Rejected', rejectionReason: 'Test duration is too short for 20 questions.', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ART-HISTORY', title: 'Art History - Final Project', description: 'Final project for Art History.', candidates: 40, marks: 150, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com', scheduling: { date: '2024-09-01', startTime: '09:00', endTime: '17:00', duration: 1440 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
-];
-
 
 export default function TestsPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
+
+    // RTK Query hooks
+    const { data: testsData = [], isLoading: isFetchingTests } = useGetTestsQuery({});
+    const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
+    const [deleteTest, { isLoading: isDeletingTest }] = useDeleteTestMutation();
+
 
     // Search params
     const page = searchParams.get('page') ?? '1';
@@ -97,38 +107,66 @@ export default function TestsPage() {
     const sortParam = searchParams.get('sort');
 
     // Component state
-    const [data, setData] = React.useState<Test[]>(testsData);
+    const [data, setData] = React.useState<Test[]>([]);
     const [pageCount, setPageCount] = React.useState(0);
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
     const [viewingTest, setViewingTest] = React.useState<Test | null>(null);
     const [rejectingTest, setRejectingTest] = React.useState<Test | null>(null);
+    const [deletingTest, setDeletingTest] = React.useState<Test | null>(null);
     const [rejectionReason, setRejectionReason] = React.useState('');
     
     const searchableColumns: (keyof Test)[] = ['id', 'title', 'createdBy'];
 
-    const handleApprovalChange = (testId: string, newStatus: ApprovalStatus, reason?: string) => {
-        setData(prevData =>
-            prevData.map(test =>
-                test.id === testId ? { ...test, approval: newStatus, rejectionReason: reason } : test
-            )
-        );
+    const handleApprovalChange = async (testId: string, newStatus: ApprovalStatus, reason?: string) => {
+        try {
+            await updateTest({ id: testId, approval: newStatus, rejectionReason: reason }).unwrap();
+            toast({
+                title: 'Success',
+                description: `Test has been ${newStatus.toLowerCase()}.`,
+            });
+        } catch (err) {
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to update test status.',
+            });
+        }
     };
     
     const handleApprovalToggle = (test: Test, approved: boolean) => {
         if (approved) {
-            handleApprovalChange(test.id, 'Approved');
+            handleApprovalChange(test._id, 'Approved');
         } else {
             setRejectingTest(test);
         }
     };
 
 
-    const handleRejectConfirm = () => {
+    const handleRejectConfirm = async () => {
         if (rejectingTest) {
-            handleApprovalChange(rejectingTest.id, 'Rejected', rejectionReason);
+            await handleApprovalChange(rejectingTest._id, 'Rejected', rejectionReason);
             setRejectingTest(null);
             setRejectionReason('');
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deletingTest) {
+            try {
+                await deleteTest(deletingTest._id).unwrap();
+                toast({
+                    title: 'Success',
+                    description: 'Test has been deleted.',
+                });
+                setDeletingTest(null);
+            } catch (err) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Failed to delete test.',
+                });
+            }
         }
     };
 
@@ -205,21 +243,13 @@ export default function TestsPage() {
         },
         cell: ({ row }) => {
             const status = row.getValue('approval') as Test['approval'];
-            if (status === 'Pending') {
-                return (
-                    <Switch
-                        checked={false}
-                        onCheckedChange={(checked) => handleApprovalToggle(row.original, checked)}
-                        aria-label="Approval toggle"
-                    />
-                )
-            }
+            const isApproved = status === 'Approved';
             return (
-                 <Switch
-                    checked={status === 'Approved'}
+                <Switch
+                    checked={isApproved}
                     onCheckedChange={(checked) => handleApprovalToggle(row.original, checked)}
                     aria-label="Approval toggle"
-                    disabled={status !== 'Pending'}
+                    disabled={status !== 'Pending' || isUpdatingTest}
                 />
             );
         },
@@ -241,8 +271,8 @@ export default function TestsPage() {
                 <DropdownMenuItem onSelect={() => setViewingTest(row.original)}>
                   <Eye className="mr-2 h-4 w-4"/> View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
-                  Delete
+                <DropdownMenuItem className="text-destructive" onClick={() => setDeletingTest(row.original)}>
+                  <Trash className="mr-2 h-4 w-4" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -282,7 +312,7 @@ export default function TestsPage() {
         const approved = testsData.filter(t => t.approval === 'Approved').length;
         const rejected = testsData.filter(t => t.approval === 'Rejected').length;
         return { total, pending, approved, rejected };
-    }, []);
+    }, [testsData]);
 
     // Debounce search term
     React.useEffect(() => {
@@ -299,17 +329,16 @@ export default function TestsPage() {
         searchTerm: string;
         sort: { id: string; desc: boolean } | null;
     }) => {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
 
         let filteredTests = testsData;
 
         if (options.searchTerm) {
             const term = options.searchTerm.toLowerCase();
             filteredTests = testsData.filter(
-                (test) =>
-                test.id.toLowerCase().includes(term) ||
-                test.title.toLowerCase().includes(term) ||
-                test.createdBy.toLowerCase().includes(term)
+                (test: Test) =>
+                (test.id && test.id.toLowerCase().includes(term)) ||
+                (test.title && test.title.toLowerCase().includes(term)) ||
+                (test.createdBy && test.createdBy.toLowerCase().includes(term))
             );
         }
 
@@ -330,7 +359,7 @@ export default function TestsPage() {
             data: pageData,
             pageCount: Math.ceil(filteredTests.length / options.pageSize),
         };
-    }, []);
+    }, [testsData]);
 
     // Fetch data effect
     React.useEffect(() => {
@@ -341,13 +370,11 @@ export default function TestsPage() {
             searchTerm,
             sort
         }).then(({ data, pageCount }) => {
-            // The state setter `setData` from useState should be used here, not direct mutation.
-            // Also, for the approval handler to work, we must manage the data state here.
-            // When that's done, this should be `setData(pageData)` from the fetch.
+            setData(data);
             setPageCount(pageCount);
             setIsLoading(false);
         });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData]);
+    }, [pageIndex, pageSize, searchTerm, sort, fetchData, testsData]);
 
 
     const handleSort = (columnId: string) => {
@@ -449,7 +476,7 @@ export default function TestsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
+                            {isLoading || isFetchingTests ? (
                                 Array.from({ length: Number(pageSize) }).map((_, i) => (
                                     <TableRow key={i}>
                                         {columns.map((col, j) => (
@@ -460,8 +487,8 @@ export default function TestsPage() {
                                     </TableRow>
                                 ))
                             ) : data.length > 0 ? (
-                            data.map((row, index) => (
-                                <TableRow key={index}>
+                            data.map((row: Test, index) => (
+                                <TableRow key={row._id}>
                                 {columns.map((column) => (
                                     <TableCell key={String(column.accessorKey)}>
                                     {column.cell
@@ -584,10 +611,30 @@ export default function TestsPage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setRejectingTest(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={handleRejectConfirm}>Confirm Rejection</Button>
+                        <Button variant="destructive" onClick={handleRejectConfirm} disabled={isUpdatingTest}>
+                            {isUpdatingTest ? 'Confirming...' : 'Confirm Rejection'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            {deletingTest && (
+                <AlertDialog open={!!deletingTest} onOpenChange={(open) => !open && setDeletingTest(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the test "{deletingTest.title}". This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeletingTest(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeletingTest}>
+                                {isDeletingTest ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </>
     );
 }

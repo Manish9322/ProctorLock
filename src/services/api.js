@@ -13,7 +13,10 @@ export const api = createApi({
     }),
     getTests: builder.query({
       query: () => 'tests',
-      providesTags: ['Tests'],
+      providesTags: (result) =>
+        result
+          ? [...result.map(({ _id }) => ({ type: 'Tests', id: _id })), { type: 'Tests', id: 'LIST' }]
+          : [{ type: 'Tests', id: 'LIST' }],
     }),
     createTest: builder.mutation({
       query: (newTest) => ({
@@ -21,9 +24,30 @@ export const api = createApi({
         method: 'POST',
         body: newTest,
       }),
-      invalidatesTags: ['Tests'],
+      invalidatesTags: [{ type: 'Tests', id: 'LIST' }],
     }),
+    updateTest: builder.mutation({
+      query: ({ id, ...patch }) => ({
+        url: `tests/${id}`,
+        method: 'PUT',
+        body: patch,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tests', id }],
+    }),
+    deleteTest: builder.mutation({
+        query: (id) => ({
+            url: `tests/${id}`,
+            method: 'DELETE',
+        }),
+        invalidatesTags: (result, error, id) => [{ type: 'Tests', id }, { type: 'Tests', id: 'LIST' }],
+    })
   }),
 });
 
-export const { useCheckDbConnectionMutation, useGetTestsQuery, useCreateTestMutation } = api;
+export const { 
+    useCheckDbConnectionMutation, 
+    useGetTestsQuery, 
+    useCreateTestMutation,
+    useUpdateTestMutation,
+    useDeleteTestMutation,
+} = api;
