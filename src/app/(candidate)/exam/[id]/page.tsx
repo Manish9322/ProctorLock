@@ -1,12 +1,11 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { AlertCircle, Check, ShieldCheck, Video, CheckCircle2 } from 'lucide-react';
-import { type SubmissionDetails } from '@/components/candidate/exam-session';
-import { ExamContainer } from '@/components/candidate/exam-container';
+import { ExamSession, type SubmissionDetails } from '@/components/candidate/exam-session';
 
 export default function ExamPage() {
   const [isExamStarted, setIsExamStarted] = useState(false);
@@ -14,12 +13,23 @@ export default function ExamPage() {
   const [terminationReason, setTerminationReason] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const params = useParams();
   const examId = params.id as string;
 
-  const handleStartExam = () => {
-    setIsExamStarted(true);
+  const handleStartExam = async () => {
+    setError(null);
+    if (containerRef.current) {
+        try {
+            await containerRef.current.requestFullscreen();
+            setIsExamStarted(true);
+        } catch (err) {
+            console.error("Could not enter fullscreen mode:", err);
+            setError("Fullscreen mode is required to start the exam. Please allow it and try again.");
+        }
+    }
   };
 
   const handleTermination = (reason: string) => {
@@ -43,7 +53,7 @@ export default function ExamPage() {
   const renderContent = () => {
     if (isExamStarted) {
       return (
-        <ExamContainer
+        <ExamSession
           examId={examId}
           onTerminate={handleTermination}
           onSuccessfulSubmit={handleSuccessfulSubmit}
@@ -139,6 +149,7 @@ export default function ExamPage() {
                   <span>Ensure you have a stable internet connection.</span>
                 </li>
               </ul>
+               {error && <p className="text-sm font-medium text-destructive">{error}</p>}
               <Button size="lg" className="w-full" onClick={handleStartExam}>
                 Start Exam & Enter Fullscreen
               </Button>
@@ -153,7 +164,7 @@ export default function ExamPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div ref={containerRef} className="min-h-screen w-full bg-background text-foreground">
         {renderContent()}
     </div>
   );
