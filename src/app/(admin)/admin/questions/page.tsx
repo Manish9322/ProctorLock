@@ -21,7 +21,9 @@ import {
     PlusCircle,
     Trash,
     Edit,
-    Upload
+    Upload,
+    FileJson,
+    FileSpreadsheet,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,6 +43,7 @@ import {
 import { QuestionDialog } from '@/components/examiner/create-test-form';
 import type { Question } from '@/components/examiner/create-test-form';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const questionsData: Question[] = [
@@ -277,35 +280,53 @@ export default function QuestionBankPage() {
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Manage Questions</CardTitle>
-                    <CardDescription>Add questions individually or bulk upload via CSV.</CardDescription>
+                 <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Manage Questions</CardTitle>
+                        <CardDescription>Add questions individually or bulk upload via CSV or JSON.</CardDescription>
+                    </div>
+                    <QuestionDialog onSave={handleSaveQuestion}>
+                        <Button>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Add New Question
+                        </Button>
+                    </QuestionDialog>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 flex flex-col items-start">
-                        <Label>Add Individually</Label>
-                        <QuestionDialog onSave={handleSaveQuestion}>
-                            <Button>
-                                <PlusCircle className="mr-2 h-4 w-4"/>
-                                Add New Question
-                            </Button>
-                        </QuestionDialog>
-                        <p className="text-xs text-muted-foreground">
-                            Manually add one question at a time.
-                        </p>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Bulk Upload</Label>
-                        <div className="flex gap-2">
-                            <Input type="file" className="flex-grow" accept=".csv"/>
-                            <Button>
-                                <Upload className="mr-2 h-4 w-4" /> Upload CSV
-                            </Button>
-                        </div>
-                         <p className="text-xs text-muted-foreground">
-                            CSV must contain `type`, `text`, `marks`, `options`, and `correctAnswer` columns. <a href="#" className="underline">Download template</a>.
-                        </p>
-                    </div>
+                <CardContent>
+                    <Tabs defaultValue="csv">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="csv"><FileSpreadsheet className="mr-2 h-4 w-4"/>CSV Upload</TabsTrigger>
+                            <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4"/>JSON Upload</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="csv" className="mt-4">
+                             <div className="space-y-2">
+                                <Label>Upload CSV File</Label>
+                                <div className="flex gap-2">
+                                    <Input type="file" className="flex-grow" accept=".csv"/>
+                                    <Button>
+                                        <Upload className="mr-2 h-4 w-4" /> Upload
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    CSV must contain `type`, `text`, `marks`, `options`, and `correctAnswer` columns. <a href="#" className="underline">Download template</a>.
+                                </p>
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="json" className="mt-4">
+                             <div className="space-y-2">
+                                <Label>Upload JSON File</Label>
+                                <div className="flex gap-2">
+                                    <Input type="file" className="flex-grow" accept=".json"/>
+                                    <Button>
+                                        <Upload className="mr-2 h-4 w-4" /> Upload
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    JSON should be an array of question objects. <a href="#" className="underline">Download template</a>.
+                                </p>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
             
