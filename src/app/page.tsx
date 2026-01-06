@@ -28,8 +28,8 @@ import { useCheckDbConnectionMutation } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
-  const [role, setRole] = useState<Role>('candidate');
-  const [email, setEmail] = useState('candidate@example.com');
+  const [role, setRole] = useState<Role>('admin');
+  const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('password');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +50,15 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (role === 'admin') {
+      // Temporary bypass for admin access
+      console.log("Bypassing login for admin role.");
+      localStorage.setItem('proctorlock_token', 'mock-admin-token');
+      router.push('/admin/dashboard');
+      return;
+    }
+
     try {
       await login(email, password, role);
       // The login function in useAuth will handle redirection on success
@@ -146,7 +155,7 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={handleRoleChange} defaultValue="candidate">
+              <Select onValueChange={handleRoleChange} defaultValue="admin">
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
