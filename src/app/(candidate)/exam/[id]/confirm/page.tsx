@@ -11,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle, Loader2, FileQuestion, HelpCircle, CheckSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 export default function ConfirmSubmissionPage() {
   const router = useRouter();
@@ -44,46 +46,70 @@ export default function ConfirmSubmissionPage() {
       description: 'Your exam has been submitted.',
     });
 
-    // In a real app, you would likely clear the exam state from local storage
-    // localStorage.removeItem(`examState-${examId}`);
-    
-    // This is a bit of a hack to break out of the fullscreen mode that the previous page was in.
-    // A more robust solution might involve signaling the exam page to exit fullscreen before navigating.
     if (document.fullscreenElement) {
         document.exitFullscreen();
     }
     
-    // Redirect to the dashboard. The exam page itself will handle showing the final submission summary.
     router.push(`/exam/${examId}?submitted=true`);
   };
 
+  const answeredCount = totalQuestions - unansweredCount;
+
   return (
-    <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-lg text-center">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle className="text-2xl">Confirm Submission</CardTitle>
           <CardDescription>
-            Are you sure you want to end your exam? You cannot make any changes after submitting.
+            You are about to end your exam. Please review the details below before you confirm.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {unansweredCount > 0 && (
-            <div className="mb-4 flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-50 p-3 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-              <AlertTriangle className="h-5 w-5" />
-              <p className="font-medium">
-                You have {unansweredCount} unanswered question{unansweredCount > 1 ? 's' : ''}.
-              </p>
+        <CardContent className="space-y-6">
+            {unansweredCount > 0 && (
+                 <Alert variant="destructive" className="border-2 border-destructive/80">
+                    <AlertTriangle className="h-5 w-5" />
+                    <AlertTitle className="font-bold">You have unanswered questions!</AlertTitle>
+                    <AlertDescription>
+                        You have <span className="font-bold">{unansweredCount} unanswered question{unansweredCount > 1 ? 's' : ''}</span>. Are you sure you want to submit?
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <div className="rounded-md border divide-y">
+                 <div className="flex justify-between items-center p-4">
+                    <div className="flex items-center gap-3">
+                        <FileQuestion className="h-5 w-5 text-muted-foreground"/>
+                        <span className="font-medium">Total Questions</span>
+                    </div>
+                    <span className="font-bold text-lg">{totalQuestions}</span>
+                </div>
+                 <div className="flex justify-between items-center p-4">
+                    <div className="flex items-center gap-3">
+                         <CheckSquare className="h-5 w-5 text-muted-foreground"/>
+                        <span className="font-medium">Answered</span>
+                    </div>
+                    <span className="font-semibold text-lg">{answeredCount}</span>
+                </div>
+                 <div className="flex justify-between items-center p-4">
+                    <div className="flex items-center gap-3">
+                        <HelpCircle className="h-5 w-5 text-muted-foreground"/>
+                        <span className="font-medium">Unanswered</span>
+                    </div>
+                    <span className="font-semibold text-lg">{unansweredCount}</span>
+                </div>
             </div>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Total Questions: {totalQuestions}
-          </p>
+
+            <p className="text-center text-sm text-muted-foreground">
+                You cannot make any changes after submission.
+            </p>
+          
         </CardContent>
-        <CardFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-center sm:gap-4">
+        <CardFooter className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4 border-t pt-6">
           <Button
             variant="outline"
             onClick={() => router.back()}
             disabled={isSubmitting}
+            className="w-full sm:w-auto"
           >
             Return to Exam
           </Button>
@@ -91,6 +117,7 @@ export default function ConfirmSubmissionPage() {
             variant="destructive"
             onClick={handleConfirmSubmit}
             disabled={isSubmitting}
+            className="w-full sm:w-auto"
           >
             {isSubmitting ? (
               <>
