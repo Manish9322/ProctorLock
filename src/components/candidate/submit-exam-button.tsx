@@ -1,5 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 interface SubmitExamButtonProps {
   onClick: () => void;
@@ -8,6 +9,7 @@ interface SubmitExamButtonProps {
 export function SubmitExamButton({
   onClick,
 }: SubmitExamButtonProps) {
+  
   return (
     <Button
       variant="destructive"

@@ -20,18 +20,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { SubmitExamButton } from './submit-exam-button';
 import { useRouter } from 'next/navigation';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { SubmitExamButton } from './submit-exam-button';
 
 
 type ActivityLog = {
@@ -79,6 +69,7 @@ const useExamState = (examId: string, questions: Question[]) => {
                 answers: {},
                 markedForReview: {},
                 timeLeft: EXAM_DURATION_SECONDS,
+                questions: questions, // Include questions in the initial state
             };
         }
         const saved = localStorage.getItem(`examState-${examId}`);
@@ -99,7 +90,8 @@ const useExamState = (examId: string, questions: Question[]) => {
     const [state, setState] = useState(getInitialState);
 
     useEffect(() => {
-        localStorage.setItem(`examState-${examId}`, JSON.stringify(state));
+        const stateToSave = { ...state, questions: undefined }; // Don't save questions array in LS
+        localStorage.setItem(`examState-${examId}`, JSON.stringify(stateToSave));
     }, [state, examId]);
     
     const setTimeLeft = (newTimeLeft: number | ((prevTime: number) => number)) => {
@@ -230,7 +222,7 @@ const QuestionNavigator = ({
         </div>
       </CardContent>
        <CardFooter className="mt-auto flex-col items-stretch p-4 gap-2">
-            <SubmitExamButton onClick={onSubmitClick} />
+           <SubmitExamButton onClick={onSubmitClick} />
         </CardFooter>
     </Card>
   );
@@ -239,11 +231,11 @@ const QuestionNavigator = ({
 export const ExamSession = ({
   examId,
   onTerminate,
-  onSuccessfulSubmit,
+  onInitiateSubmit
 }: {
   examId: string;
   onTerminate: (reason: string) => void;
-  onSuccessfulSubmit: (details: SubmissionDetails) => void;
+  onInitiateSubmit: () => void;
 }) => {
   const router = useRouter();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -252,12 +244,6 @@ export const ExamSession = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const { answers, setAnswers, markedForReview, setMarkedForReview, timeLeft, setTimeLeft } = useExamState(examId, questions);
-  
-  const handleFinalSubmit = useCallback(async () => {
-    // This function will be called from the confirm page, not directly here.
-    // The onSuccessfulSubmit will be called from the parent page.
-    console.log("Final submission initiated from confirmation page.");
-  }, []);
   
   const terminateExam = useCallback((reason: string) => {
     onTerminate(reason);
@@ -301,14 +287,12 @@ export const ExamSession = ({
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      terminateExam("Time's up! Your exam has been automatically submitted.");
-      // The actual submission would happen on the server or confirm page after this.
-      router.push(`/exam/${examId}/confirm`);
+      onInitiateSubmit(); // Go to confirm screen when time is up
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, terminateExam, setTimeLeft, examId, router]);
+  }, [timeLeft, terminateExam, setTimeLeft, examId, router, onInitiateSubmit]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev: any) => ({ ...prev, [questionId]: value }));
@@ -323,10 +307,6 @@ export const ExamSession = ({
   const goToPrevious = () => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
 
   const currentQuestion = questions[currentQuestionIndex];
-
-  const handleSubmitClick = () => {
-      router.push(`/exam/${examId}/confirm`);
-  }
 
   return (
     <>
@@ -377,7 +357,7 @@ export const ExamSession = ({
                       answers={answers}
                       markedForReview={markedForReview}
                       onSelectQuestion={setCurrentQuestionIndex}
-                      onSubmitClick={handleSubmitClick}
+                      onSubmitClick={onInitiateSubmit}
                   />
               </div>
           </main>
