@@ -1,4 +1,3 @@
-"use client"
 import { MONGODB_URI } from "@/config/config";
 import mongoose from "mongoose";
 
