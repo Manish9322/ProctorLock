@@ -66,7 +66,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { RadioGroup } from '../ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -395,27 +395,29 @@ export function QuestionDialog({
   question,
   onSave,
   children,
+  open,
+  onOpenChange,
+  isSaving,
 }: {
-  question?: Question;
-  onSave: (question: Omit<Question, '_id' | 'id'>) => void;
+  question?: Question | null;
+  onSave: (question: Omit<Question, '_id' | 'id'>) => Promise<boolean>;
   children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isSaving?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const isEditMode = !!question;
   const [type, setType] = useState<'mcq' | 'descriptive'>(
-    question?.type || 'mcq'
+    'mcq'
   );
-  const [text, setText] = useState(question?.text || '');
-  const [marks, setMarks] = useState(question?.marks || 1);
-  const [negativeMarks, setNegativeMarks] = useState(
-    question?.negativeMarks || 0
-  );
-  const [options, setOptions] = useState(question?.options || ['', '', '', '']);
-  const [correctAnswer, setCorrectAnswer] = useState(
-    question?.correctAnswer || ''
-  );
+  const [text, setText] = useState('');
+  const [marks, setMarks] = useState(1);
+  const [negativeMarks, setNegativeMarks] = useState(0);
+  const [options, setOptions] = useState(['', '', '', '']);
+  const [correctAnswer, setCorrectAnswer] = useState('');
   
   React.useEffect(() => {
-    if(open) {
+    if (open) {
         setType(question?.type || 'mcq');
         setText(question?.text || '');
         setMarks(question?.marks || 1);
@@ -423,9 +425,9 @@ export function QuestionDialog({
         setOptions(question?.options || ['', '', '', '']);
         setCorrectAnswer(question?.correctAnswer || '');
     }
-  }, [open, question])
+  }, [open, question]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newQuestion: Omit<Question, '_id' | 'id'> = {
       type,
       text,
@@ -434,8 +436,10 @@ export function QuestionDialog({
       options: type === 'mcq' ? options.filter(opt => opt.trim() !== '') : undefined,
       correctAnswer: type === 'mcq' ? correctAnswer : undefined,
     };
-    onSave(newQuestion);
-    setOpen(false);
+    const success = await onSave(newQuestion);
+    if (success) {
+      onOpenChange(false);
+    }
   };
   
   const handleOptionChange = (index: number, value: string) => {
@@ -445,12 +449,12 @@ export function QuestionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {question ? 'Edit Question' : 'Add New Question'}
+            {isEditMode ? 'Edit Question' : 'Add New Question'}
           </DialogTitle>
           <DialogDescription>
             Configure the question details, type, and scoring.
@@ -497,10 +501,10 @@ export function QuestionDialog({
                             placeholder={`Option ${index + 1}`}
                         />
                         <div className="flex items-center space-x-2">
-                             <Checkbox
+                             <RadioGroupItem
+                                value={option}
                                 id={`correct-${index}`}
-                                checked={correctAnswer === option && option !== ''}
-                                onCheckedChange={() => setCorrectAnswer(option)}
+                                disabled={option === ''}
                             />
                             <Label htmlFor={`correct-${index}`}>Correct</Label>
                         </div>
@@ -531,10 +535,12 @@ export function QuestionDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Question</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Question')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -806,3 +812,4 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
         </div>
     )
 }
+

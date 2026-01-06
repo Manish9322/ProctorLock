@@ -84,7 +84,7 @@ export default function QuestionBankPage() {
         setModalState({ type: null, question: null });
     };
 
-    const handleSaveQuestion = async (questionData: Question) => {
+    const handleSaveQuestion = async (questionData: Omit<Question, '_id' | 'id'>) => {
         try {
             if (modalState.type === 'edit' && modalState.question) {
                 await updateQuestion({ id: modalState.question._id, ...questionData }).unwrap();
@@ -94,12 +94,14 @@ export default function QuestionBankPage() {
                 toast({ title: "Success", description: "Question added to the bank." });
             }
             handleCloseModal();
+            return true;
         } catch (err: any) {
             toast({
                 variant: 'destructive',
                 title: "Error",
                 description: err.data?.message || "Failed to save question."
             });
+            return false;
         }
     };
 
@@ -304,10 +306,18 @@ export default function QuestionBankPage() {
                         <CardTitle>Manage Questions</CardTitle>
                         <CardDescription>Add questions individually or bulk upload via CSV or JSON.</CardDescription>
                     </div>
-                    <Button onClick={() => handleOpenModal('add')}>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Add New Question
-                    </Button>
+                     <QuestionDialog
+                        open={modalState.type === 'add' || modalState.type === 'edit'}
+                        onOpenChange={(isOpen) => !isOpen && handleCloseModal()}
+                        question={modalState.question}
+                        onSave={handleSaveQuestion}
+                        isSaving={isCreating || isUpdating}
+                     >
+                        <Button onClick={() => handleOpenModal('add')}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Add New Question
+                        </Button>
+                    </QuestionDialog>
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="csv">
@@ -477,14 +487,6 @@ export default function QuestionBankPage() {
 
     return (
         <>
-             <QuestionDialog 
-                question={modalState.question} 
-                onSave={handleSaveQuestion}
-                key={modalState.question?._id || 'add'}
-             >
-                {/* This is a dummy trigger, the real one is in the PageContent */}
-                <span />
-            </QuestionDialog>
             {questionToDelete && (
                 <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>
                     <AlertDialogContent>
@@ -507,3 +509,4 @@ export default function QuestionBankPage() {
         </>
     )
 }
+
