@@ -51,14 +51,6 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (role === 'admin') {
-      // Temporary bypass for admin access
-      console.log("Bypassing login for admin role.");
-      localStorage.setItem('proctorlock_token', 'mock-admin-token');
-      router.push('/admin/dashboard');
-      return;
-    }
-
     try {
       await login(email, password, role);
       // The login function in useAuth will handle redirection on success

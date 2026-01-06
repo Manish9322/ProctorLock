@@ -126,25 +126,25 @@ export default function AdminLayout({
 }) {
   const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(true); // Temporarily bypass auth
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const allowedRoles: Role[] = ['admin'];
 
-  // useEffect(() => {
-  //   // Give it a moment to get user from context
-  //   const timer = setTimeout(() => {
-  //       if (!isAuthenticated) {
-  //           router.push('/');
-  //       } else if (user && user.role) {
-  //           if (allowedRoles && !allowedRoles.includes(user.role)) {
-  //               router.push(`/${user.role}/dashboard`);
-  //           } else {
-  //               setIsAuthorized(true);
-  //           }
-  //       }
-  //   }, 200);
-  //   return () => clearTimeout(timer);
-  // }, [isAuthenticated, user, router, allowedRoles]);
+  useEffect(() => {
+    // Give it a moment to get user from context
+    const timer = setTimeout(() => {
+        if (!isAuthenticated) {
+            router.push('/');
+        } else if (user && user.role) {
+            if (allowedRoles && !allowedRoles.includes(user.role)) {
+                router.push(`/${user.role}/dashboard`);
+            } else {
+                setIsAuthorized(true);
+            }
+        }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, user, router, allowedRoles]);
 
   if (!isAuthorized) {
     return (
@@ -158,12 +158,6 @@ export default function AdminLayout({
     );
   }
 
-  const handleLogout = () => {
-    // Manually clear token and redirect since we are bypassing auth context's logout
-    localStorage.removeItem('proctorlock_token');
-    router.push('/');
-  };
-
   return (
     <SidebarProvider>
         <AdminSidebar onLogoutClick={() => setIsLogoutDialogOpen(true)} />
@@ -175,7 +169,7 @@ export default function AdminLayout({
         <LogoutConfirmationDialog
             open={isLogoutDialogOpen}
             onOpenChange={setIsLogoutDialogOpen}
-            onConfirm={handleLogout}
+            onConfirm={logout}
         />
     </SidebarProvider>
   );
