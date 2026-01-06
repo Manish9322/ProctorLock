@@ -2,20 +2,18 @@
 import { Button } from '@/components/ui/button';
 
 interface SubmitExamButtonProps {
-  unansweredQuestionsCount: number;
-  onNavigateToConfirm: () => void;
+  onClick: () => void;
 }
 
 export function SubmitExamButton({
-  unansweredQuestionsCount,
-  onNavigateToConfirm,
+  onClick,
 }: SubmitExamButtonProps) {
   return (
     <Button
       variant="destructive"
       size="sm"
       className="w-full"
-      onClick={onNavigateToConfirm}
+      onClick={onClick}
     >
       Submit Exam
     </Button>
