@@ -94,7 +94,6 @@ const QuestionNavigator = ({
   markedForReview,
   onSelectQuestion,
   isSubmitting,
-  unansweredQuestions,
 }: {
   questions: Question[];
   currentQuestionIndex: number;
@@ -102,7 +101,6 @@ const QuestionNavigator = ({
   markedForReview: { [key: string]: boolean };
   onSelectQuestion: (index: number) => void;
   isSubmitting: boolean;
-  unansweredQuestions: number;
 }) => {
   const getStatus = (index: number): QuestionStatus => {
     const questionId = questions[index].id;
@@ -342,60 +340,60 @@ export function ExamSession({ examId }: { examId: string }) {
   return (
     <AlertDialog>
         <div className="flex h-screen flex-col bg-muted/40">
-        <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
-            <h1 className="text-lg font-bold">Exam: {examId}</h1>
-            <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
-        </header>
-        <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-y-auto">
-            {/* Main Content */}
-            <div className="lg:col-span-3">
-                <Card className="h-full flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Question {currentQuestionIndex + 1} of {questions.length}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                        <p className="mb-6 text-base">{currentQuestion.text}</p>
-                        <RadioGroup 
-                            value={answers[currentQuestion.id] || ''}
-                            onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
-                        >
-                            {currentQuestion.options.map((option, index) => (
-                                <Label key={index} className="flex items-center gap-4 rounded-md border p-4 hover:bg-accent cursor-pointer has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                                <RadioGroupItem value={option} id={`q${currentQuestion.id}-opt${index}`} />
-                                <span>{option}</span>
-                                </Label>
-                            ))}
-                        </RadioGroup>
-                    </CardContent>
-                    <div className="border-t p-4 flex justify-between items-center">
-                        <Button variant="outline" onClick={handleMarkForReview}>
-                            <Bookmark className={cn("mr-2 h-4 w-4", markedForReview[currentQuestion.id] && "fill-current")}/>
-                            {markedForReview[currentQuestion.id] ? 'Unmark Review' : 'Mark for Review'}
-                        </Button>
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={goToPrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4"/> Previous</Button>
-                            <Button onClick={goToNext} disabled={currentQuestionIndex === questions.length - 1}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
+            <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
+                <h1 className="text-lg font-bold">Exam: {examId}</h1>
+                <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
+            </header>
+            <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-y-auto">
+                {/* Main Content */}
+                <div className="lg:col-span-3">
+                    <Card className="h-full flex flex-col">
+                        <CardHeader>
+                            <CardTitle>Question {currentQuestionIndex + 1} of {questions.length}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <p className="mb-6 text-base">{currentQuestion.text}</p>
+                            <RadioGroup 
+                                value={answers[currentQuestion.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+                            >
+                                {currentQuestion.options.map((option, index) => (
+                                    <Label key={index} className="flex items-center gap-4 rounded-md border p-4 hover:bg-accent cursor-pointer has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                    <RadioGroupItem value={option} id={`q${currentQuestion.id}-opt${index}`} />
+                                    <span>{option}</span>
+                                    </Label>
+                                ))}
+                            </RadioGroup>
+                        </CardContent>
+                        <div className="border-t p-4 flex justify-between items-center">
+                            <Button variant="outline" onClick={handleMarkForReview}>
+                                <Bookmark className={cn("mr-2 h-4 w-4", markedForReview[currentQuestion.id] && "fill-current")}/>
+                                {markedForReview[currentQuestion.id] ? 'Unmark Review' : 'Mark for Review'}
+                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={goToPrevious} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4"/> Previous</Button>
+                                <Button onClick={goToNext} disabled={currentQuestionIndex === questions.length - 1}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
+                            </div>
                         </div>
-                    </div>
-                </Card>
-            </div>
-            
-            {/* Navigator */}
-            <div className="lg:col-span-1 h-full hidden lg:block">
-                <QuestionNavigator
-                    questions={questions}
-                    currentQuestionIndex={currentQuestionIndex}
-                    answers={answers}
-                    markedForReview={markedForReview}
-                    onSelectQuestion={setCurrentQuestionIndex}
-                    isSubmitting={isSubmitting}
-                    unansweredQuestions={unansweredQuestions}
-                />
-            </div>
-        </main>
-        <video ref={videoRef} autoPlay muted playsInline className="hidden" />
-        <canvas ref={canvasRef} className="hidden" />
+                    </Card>
+                </div>
+                
+                {/* Navigator */}
+                <div className="lg:col-span-1 h-full hidden lg:block">
+                    <QuestionNavigator
+                        questions={questions}
+                        currentQuestionIndex={currentQuestionIndex}
+                        answers={answers}
+                        markedForReview={markedForReview}
+                        onSelectQuestion={setCurrentQuestionIndex}
+                        isSubmitting={isSubmitting}
+                    />
+                </div>
+            </main>
+            <video ref={videoRef} autoPlay muted playsInline className="hidden" />
+            <canvas ref={canvasRef} className="hidden" />
         </div>
+        
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
