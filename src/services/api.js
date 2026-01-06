@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Tests'],
+  tagTypes: ['Tests', 'Questions'],
   endpoints: (builder) => ({
     checkDbConnection: builder.mutation({
       query: () => ({
@@ -40,6 +40,36 @@ export const api = createApi({
             method: 'DELETE',
         }),
         invalidatesTags: (result, error, id) => [{ type: 'Tests', id }, { type: 'Tests', id: 'LIST' }],
+    }),
+    getQuestions: builder.query({
+      query: () => 'questions',
+      providesTags: (result) =>
+        result
+          ? [...result.map(({ _id }) => ({ type: 'Questions', id: _id })), { type: 'Questions', id: 'LIST' }]
+          : [{ type: 'Questions', id: 'LIST' }],
+    }),
+    createQuestion: builder.mutation({
+      query: (newQuestion) => ({
+        url: 'questions',
+        method: 'POST',
+        body: newQuestion,
+      }),
+      invalidatesTags: [{ type: 'Questions', id: 'LIST' }],
+    }),
+    updateQuestion: builder.mutation({
+      query: ({ id, ...patch }) => ({
+        url: `questions/${id}`,
+        method: 'PUT',
+        body: patch,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Questions', id }, { type: 'Questions', id: 'LIST' }],
+    }),
+    deleteQuestion: builder.mutation({
+        query: (id) => ({
+            url: `questions/${id}`,
+            method: 'DELETE',
+        }),
+        invalidatesTags: (result, error, id) => [{ type: 'Questions', id }, { type: 'Questions', id: 'LIST' }],
     })
   }),
 });
@@ -50,4 +80,8 @@ export const {
     useCreateTestMutation,
     useUpdateTestMutation,
     useDeleteTestMutation,
+    useGetQuestionsQuery,
+    useCreateQuestionMutation,
+    useUpdateQuestionMutation,
+    useDeleteQuestionMutation,
 } = api;

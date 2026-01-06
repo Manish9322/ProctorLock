@@ -83,6 +83,7 @@ const steps = [
 ];
 
 export type Question = {
+  _id: string;
   id: string;
   type: 'mcq' | 'descriptive';
   text: string;
@@ -396,7 +397,7 @@ export function QuestionDialog({
   children,
 }: {
   question?: Question;
-  onSave: (question: Question) => void;
+  onSave: (question: Omit<Question, '_id' | 'id'>) => void;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -425,17 +426,14 @@ export function QuestionDialog({
   }, [open, question])
 
   const handleSave = () => {
-    const newQuestion: Question = {
-      id: question?.id || new Date().toISOString(),
+    const newQuestion: Omit<Question, '_id' | 'id'> = {
       type,
       text,
       marks,
       negativeMarks,
+      options: type === 'mcq' ? options.filter(opt => opt.trim() !== '') : undefined,
+      correctAnswer: type === 'mcq' ? correctAnswer : undefined,
     };
-    if (type === 'mcq') {
-      newQuestion.options = options.filter(opt => opt.trim() !== '');
-      newQuestion.correctAnswer = correctAnswer;
-    }
     onSave(newQuestion);
     setOpen(false);
   };

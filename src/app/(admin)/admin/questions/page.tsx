@@ -44,20 +44,20 @@ import { QuestionDialog } from '@/components/examiner/create-test-form';
 import type { Question } from '@/components/examiner/create-test-form';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-
-const questionsData: Question[] = [
-    { id: 'q1', type: 'mcq', text: 'What is the capital of France?', options: ['Paris', 'London', 'Berlin', 'Madrid'], correctAnswer: 'Paris', marks: 1, negativeMarks: 0},
-    { id: 'q2', type: 'descriptive', text: 'Explain the theory of relativity.', marks: 5, negativeMarks: 0},
-    { id: 'q3', type: 'mcq', text: 'What is 2 + 2?', options: ['3', '4', '5', '6'], correctAnswer: '4', marks: 1, negativeMarks: 0},
-    { id: 'q4', type: 'mcq', text: 'Which planet is known as the Red Planet?', options: ['Earth', 'Mars', 'Jupiter', 'Venus'], correctAnswer: 'Mars', marks: 1, negativeMarks: 0 },
-    { id: 'q5', type: 'descriptive', text: 'What is photosynthesis?', marks: 3, negativeMarks: 0},
-];
+import { useGetQuestionsQuery, useCreateQuestionMutation, useUpdateQuestionMutation, useDeleteQuestionMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 export default function QuestionBankPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
+
+    // RTK Query Hooks
+    const { data: questionsData = [], isLoading: isFetchingQuestions } = useGetQuestionsQuery();
+    const [createQuestion, { isLoading: isCreating }] = useCreateQuestionMutation();
+    const [updateQuestion, { isLoading: isUpdating }] = useUpdateQuestionMutation();
+    const [deleteQuestion, { isLoading: isDeleting }] = useDeleteQuestionMutation();
 
     // Modal states
     const [modalState, setModalState] = useState<{ type: 'add' | 'edit' | null; question: Question | null }>({ type: null, question: null });
@@ -84,29 +84,48 @@ export default function QuestionBankPage() {
         setModalState({ type: null, question: null });
     };
 
-    const handleSaveQuestion = (questionData: Question) => {
-        if (modalState.type === 'edit' && modalState.question) {
-            console.log('Updating question:', modalState.question.id, questionData);
-        } else {
-            console.log('Adding new question:', questionData);
+    const handleSaveQuestion = async (questionData: Question) => {
+        try {
+            if (modalState.type === 'edit' && modalState.question) {
+                await updateQuestion({ id: modalState.question._id, ...questionData }).unwrap();
+                toast({ title: "Success", description: "Question updated successfully." });
+            } else {
+                await createQuestion(questionData).unwrap();
+                toast({ title: "Success", description: "Question added to the bank." });
+            }
+            handleCloseModal();
+        } catch (err: any) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: err.data?.message || "Failed to save question."
+            });
         }
-        handleCloseModal();
-    }
+    };
 
     const handleDeleteClick = (question: Question) => {
         setQuestionToDelete(question);
     };
 
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = async () => {
         if (questionToDelete) {
-            console.log(`Deleting question ${questionToDelete.id}`);
-            setQuestionToDelete(null);
+            try {
+                await deleteQuestion(questionToDelete._id).unwrap();
+                toast({ title: "Success", description: "Question deleted successfully." });
+                setQuestionToDelete(null);
+            } catch (err: any) {
+                 toast({
+                    variant: 'destructive',
+                    title: "Error",
+                    description: err.data?.message || "Failed to delete question."
+                });
+            }
         }
     };
 
 
     interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions';
+        accessorKey: keyof TData | 'actions' | '_id';
         header: {
           title: string;
           sortable?: boolean;
@@ -208,8 +227,6 @@ export default function QuestionBankPage() {
         searchTerm: string;
         sort: { id: string; desc: boolean } | null;
     }) => {
-        await new Promise(resolve => setTimeout(resolve, 500));
-
         let filteredQuestions = questionsData;
 
         if (options.searchTerm) {
@@ -225,8 +242,10 @@ export default function QuestionBankPage() {
         if (options.sort) {
             filteredQuestions.sort((a, b) => {
                 const key = options.sort!.id as keyof Question;
-                if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
-                if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
+                const valA = a[key] || '';
+                const valB = b[key] || '';
+                if (valA < valB) return options.sort!.desc ? 1 : -1;
+                if (valA > valB) return options.sort!.desc ? -1 : 1;
                 return 0;
             });
         }
@@ -239,7 +258,7 @@ export default function QuestionBankPage() {
             data: pageData,
             pageCount: Math.ceil(filteredQuestions.length / options.pageSize),
         };
-    }, []);
+    }, [questionsData]);
 
     React.useEffect(() => {
         setIsLoading(true);
@@ -253,7 +272,7 @@ export default function QuestionBankPage() {
             setPageCount(pageCount);
             setIsLoading(false);
         });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData]);
+    }, [pageIndex, pageSize, searchTerm, sort, fetchData, questionsData]);
 
 
     const handleSort = (columnId: string) => {
@@ -285,12 +304,10 @@ export default function QuestionBankPage() {
                         <CardTitle>Manage Questions</CardTitle>
                         <CardDescription>Add questions individually or bulk upload via CSV or JSON.</CardDescription>
                     </div>
-                    <QuestionDialog onSave={handleSaveQuestion}>
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4"/>
-                            Add New Question
-                        </Button>
-                    </QuestionDialog>
+                    <Button onClick={() => handleOpenModal('add')}>
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Add New Question
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="csv">
@@ -370,7 +387,7 @@ export default function QuestionBankPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
+                            {isLoading || isFetchingQuestions ? (
                                 Array.from({ length: Number(pageSize) }).map((_, i) => (
                                     <TableRow key={i}>
                                         {columns.map((col, j) => (
@@ -382,7 +399,7 @@ export default function QuestionBankPage() {
                                 ))
                             ) : data.length > 0 ? (
                             data.map((row) => (
-                                <TableRow key={row.id}>
+                                <TableRow key={row._id}>
                                 {columns.map((column) => (
                                     <TableCell key={String(column.accessorKey)}>
                                     {column.cell
@@ -460,6 +477,14 @@ export default function QuestionBankPage() {
 
     return (
         <>
+             <QuestionDialog 
+                question={modalState.question} 
+                onSave={handleSaveQuestion}
+                key={modalState.question?._id || 'add'}
+             >
+                {/* This is a dummy trigger, the real one is in the PageContent */}
+                <span />
+            </QuestionDialog>
             {questionToDelete && (
                 <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>
                     <AlertDialogContent>
@@ -471,7 +496,9 @@ export default function QuestionBankPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setQuestionToDelete(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting}>
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
