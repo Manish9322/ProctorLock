@@ -220,7 +220,7 @@ export function ExamSession({ examId }: { examId: string }) {
   useEffect(() => {
     if (isSubmitted || isTerminated) return;
     if (timeLeft <= 0) {
-      handleConfirmSubmit("Time's up! Your exam has been automatically submitted.");
+      handleConfirmSubmit();
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
@@ -241,7 +241,7 @@ export function ExamSession({ examId }: { examId: string }) {
 
   const unansweredQuestions = questions.length - Object.keys(answers).length;
 
-  const handleConfirmSubmit = async (reason: string) => {
+  const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -270,7 +270,7 @@ export function ExamSession({ examId }: { examId: string }) {
               <AlertCircle className="h-6 w-6 text-destructive" />
               {timeLeft <= 0 ? "Time's Up" : "Exam Terminated"}
             </AlertDialogTitle>
-            <AlertDialogDescription>{terminationReason}</AlertDialogDescription>
+            <AlertDialogDescription>{timeLeft <= 0 ? "Time's up! Your exam has been automatically submitted." : terminationReason}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => (window.location.href = '/dashboard')}>
@@ -350,7 +350,7 @@ export function ExamSession({ examId }: { examId: string }) {
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction 
-                        onClick={() => handleConfirmSubmit('You have successfully submitted your exam.')} 
+                        onClick={handleConfirmSubmit} 
                         disabled={isSubmitting}
                     >
                         {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
