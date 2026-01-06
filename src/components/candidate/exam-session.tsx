@@ -93,12 +93,18 @@ const QuestionNavigator = ({
   answers,
   markedForReview,
   onSelectQuestion,
+  onSubmit,
+  isSubmitting,
+  unansweredQuestions
 }: {
   questions: Question[];
   currentQuestionIndex: number;
   answers: { [key: string]: string };
   markedForReview: { [key: string]: boolean };
   onSelectQuestion: (index: number) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  unansweredQuestions: number;
 }) => {
   const getStatus = (index: number): QuestionStatus => {
     const questionId = questions[index].id;
@@ -108,11 +114,11 @@ const QuestionNavigator = ({
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Question Navigator</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <div className="grid grid-cols-5 gap-2">
           {questions.map((q, index) => {
             const status = getStatus(index);
@@ -125,8 +131,8 @@ const QuestionNavigator = ({
                                 className={cn(
                                     "flex h-10 w-10 items-center justify-center rounded-md border text-sm font-medium",
                                     index === currentQuestionIndex && "ring-2 ring-primary ring-offset-2",
-                                    status === 'answered' && "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
-                                    status === 'review' && "bg-yellow-100 dark:bg-yellow-900 border-yellow-400 dark:border-yellow-600",
+                                    status === 'answered' && "bg-secondary text-secondary-foreground",
+                                    status === 'review' && "border-primary",
                                     status === 'unanswered' && "bg-muted/50"
                                 )}
                             >
@@ -143,10 +149,41 @@ const QuestionNavigator = ({
         </div>
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2"><Square className="h-4 w-4 bg-muted/50"/> Unanswered</div>
-            <div className="flex items-center gap-2"><CheckSquare className="h-4 w-4 bg-green-100 dark:bg-green-900"/> Answered</div>
-            <div className="flex items-center gap-2"><Bookmark className="h-4 w-4 bg-yellow-100 dark:bg-yellow-900"/> Marked for Review</div>
+            <div className="flex items-center gap-2"><CheckSquare className="h-4 w-4 bg-secondary"/> Answered</div>
+            <div className="flex items-center gap-2"><Bookmark className="h-4 w-4 border border-primary rounded-sm"/> Marked for Review</div>
         </div>
       </CardContent>
+       <CardFooter className="mt-auto flex-col items-stretch p-4 gap-2">
+          <AlertDialog>
+             <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? 'Submitting...' : 'Submit Exam'}
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You cannot make any changes after submitting.
+                        {unansweredQuestions > 0 && (
+                            <span className="font-semibold block mt-2">
+                                You have {unansweredQuestions} unanswered question{unansweredQuestions > 1 ? 's' : ''}.
+                            </span>
+                        )}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={onSubmit} 
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardFooter>
     </Card>
   );
 };
@@ -327,38 +364,7 @@ export function ExamSession({ examId }: { examId: string }) {
     <div className="flex h-screen flex-col bg-muted/40">
       <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
         <h1 className="text-lg font-bold">Exam: {examId}</h1>
-        <div className="flex items-center gap-4">
-          <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
-          <AlertDialog>
-             <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isSubmitting}>
-                    {isSubmitting ? 'Submitting...' : 'Submit Exam'}
-                </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You cannot make any changes after submitting.
-                        {unansweredQuestions > 0 && (
-                            <span className="font-semibold block mt-2">
-                                You have {unansweredQuestions} unanswered question{unansweredQuestions > 1 ? 's' : ''}.
-                            </span>
-                        )}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                        onClick={handleConfirmSubmit} 
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
       </header>
       <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-y-auto">
         {/* Main Content */}
@@ -402,6 +408,9 @@ export function ExamSession({ examId }: { examId: string }) {
                 answers={answers}
                 markedForReview={markedForReview}
                 onSelectQuestion={setCurrentQuestionIndex}
+                onSubmit={handleConfirmSubmit}
+                isSubmitting={isSubmitting}
+                unansweredQuestions={unansweredQuestions}
             />
         </div>
       </main>
