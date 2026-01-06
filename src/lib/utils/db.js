@@ -10,10 +10,16 @@ const _db = async () => {
 
     // Validate MONGODB_URI
     if (!MONGODB_URI) {
-      throw new Error("MONGODB_URI is not defined in environment variables");
+      // Use process.env directly if config import fails
+      const mongoUri = process.env.MONGODB_URI;
+      if (!mongoUri) {
+         throw new Error("MONGODB_URI is not defined in environment variables");
+      }
+       await mongoose.connect(mongoUri);
+    } else {
+        await mongoose.connect(MONGODB_URI);
     }
 
-    await mongoose.connect(MONGODB_URI);
     console.log("MongoDB connected successfully");
   } catch (error) {
     console.error("MongoDB connection error:", error.message);

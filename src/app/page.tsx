@@ -29,14 +29,16 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const [role, setRole] = useState<Role>('candidate');
-  const [username, setUsername] = useState('candidate@example.com');
+  const [email, setEmail] = useState('candidate@example.com');
+  const [password, setPassword] = useState('password');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const [checkDbConnection, { isLoading, isSuccess, isError, data, error }] = useCheckDbConnectionMutation();
+  const [checkDbConnection, { isLoading: isDbLoading, isSuccess, isError, data, error }] = useCheckDbConnectionMutation();
   
   useEffect(() => {
     const testId = searchParams.get('testId');
@@ -45,16 +47,28 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(username, role);
+    setIsLoading(true);
+    try {
+      await login(email, password, role);
+      // The login function in useAuth will handle redirection on success
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: err.message || 'An unknown error occurred.',
+      });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleRoleChange = (value: string) => {
     const newRole = value as Role;
     setRole(newRole);
     if (newRole) {
-      setUsername(`${newRole}@example.com`);
+      setEmail(`${newRole}@example.com`);
     }
   }
 
@@ -82,8 +96,8 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="absolute top-4 left-4">
-        <Button onClick={handleTestConnection} disabled={isLoading}>
-          {isLoading ? 'Testing...' : 'Test DB Connection'}
+        <Button onClick={handleTestConnection} disabled={isDbLoading}>
+          {isDbLoading ? 'Testing...' : 'Test DB Connection'}
         </Button>
       </div>
       <div className="mb-8 flex items-center gap-2 text-2xl font-bold">
@@ -106,13 +120,19 @@ export default function LoginPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2 relative">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type={showPassword ? "text" : "password"} required defaultValue="password" />
+              <Input 
+                id="password" 
+                type={showPassword ? "text" : "password"} 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)} 
+              />
                <Button
                   type="button"
                   variant="ghost"
@@ -139,8 +159,8 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full">
-              Sign in
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-sm text-center text-muted-foreground">
               Don't have an account?{' '}

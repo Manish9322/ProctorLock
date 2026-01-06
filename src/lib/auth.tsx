@@ -5,42 +5,95 @@ import {
   useState,
   useMemo,
   type ReactNode,
+  useEffect,
+  useCallback,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { jwtDecode } from 'jsonwebtoken';
 
 export type Role = 'candidate' | 'examiner' | 'admin' | null;
 
+interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+}
+
 interface AuthContextType {
-  user: { name: string; role: Role } | null;
-  login: (name: string, role: Role) => void;
+  user: User | null;
+  login: (email: string, password: string, role: Role) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isTokenExpired = (token: string): boolean => {
+    try {
+        const { exp } = jwtDecode(token) as { exp: number };
+        if (!exp) return true;
+        return Date.now() >= exp * 1000;
+    } catch (e) {
+        return true;
+    }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<{ name: string; role: Role } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
-  const login = (name: string, role: Role) => {
-    // In a real app, you'd perform authentication and get a JWT here.
-    // For this mock, we'll just set the user state.
-    const newUser = { name, role };
-    setUser(newUser);
-    if (role === 'candidate') {
+   useEffect(() => {
+    try {
+      const token = localStorage.getItem('proctorlock_token');
+      if (token && !isTokenExpired(token)) {
+        const decodedUser = jwtDecode(token) as User;
+        setUser(decodedUser);
+      } else {
+        localStorage.removeItem('proctorlock_token');
+      }
+    } catch (error) {
+        console.error("Failed to decode token on initial load", error);
+        localStorage.removeItem('proctorlock_token');
+    }
+  }, []);
+
+  const login = useCallback(async (email: string, password: string, role: Role) => {
+    const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, role }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+    }
+
+    const { token } = data;
+    localStorage.setItem('proctorlock_token', token);
+
+    const decodedUser = jwtDecode(token) as User;
+    setUser(decodedUser);
+    
+    // Redirect based on role
+    if (decodedUser.role === 'candidate') {
       router.push('/dashboard');
-    } else if (role === 'examiner') {
+    } else if (decodedUser.role === 'examiner') {
       router.push('/examiner/dashboard');
-    } else if (role === 'admin') {
+    } else if (decodedUser.role === 'admin') {
       router.push('/admin/dashboard');
     }
-  };
+  }, [router]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
+    localStorage.removeItem('proctorlock_token');
     router.push('/');
-  };
+  }, [router]);
 
   const value = useMemo(
     () => ({
@@ -49,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       isAuthenticated: !!user,
     }),
-    [user]
+    [user, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,17 +2,27 @@
 import _db from '@/lib/utils/db';
 import Candidate from '@/models/candidate.model';
 import { NextResponse } from 'next/server';
+import bcryptjs from 'bcryptjs';
+
 
 export async function POST(req) {
     try {
         await _db();
         const body = await req.json();
 
-        // In a real app, hash the password before saving
-        // For now, we'll save it as is for demonstration
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(body.password, salt);
+
+        const newCandidate = new Candidate({
+            ...body,
+            password: hashedPassword,
+        });
         
-        const newCandidate = new Candidate(body);
         await newCandidate.save();
+        
+        // Don't send password back
+        newCandidate.password = undefined;
+
         return NextResponse.json(newCandidate, { status: 201 });
     } catch (error) {
         if (error.code === 11000) { // Handle duplicate email error
