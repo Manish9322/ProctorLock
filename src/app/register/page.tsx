@@ -34,15 +34,17 @@ import { Combobox } from '@/components/ui/combobox';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { registrationOptions } from '@/lib/config-data';
+import { useGetRolesQuery, useGetGovIdTypesQuery, useRegisterCandidateMutation, useGetCollegesQuery } from '@/services/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const registrationSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
+  name: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
   phoneNumber: z.string().min(10, 'Please enter a valid phone number.'),
   timezone: z.string().min(2, 'Timezone is required.'),
   role: z.string().min(1, 'Please select a role.'),
-  organization: z.string().min(2, 'Organization name is required.'),
+  college: z.string().min(2, 'Organization name is required.'),
   govIdType: z.string().min(1, 'Please select an ID type.'),
   govIdNumber: z.string().min(4, 'ID number must be at least 4 characters.'),
 });
@@ -52,41 +54,47 @@ type RegistrationFormValues = z.infer<typeof registrationSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // RTK Query Hooks
+  const { data: roles = [], isLoading: isLoadingRoles } = useGetRolesQuery({});
+  const { data: idTypes = [], isLoading: isLoadingIdTypes } = useGetGovIdTypesQuery({});
+  const { data: colleges = [], isLoading: isLoadingColleges } = useGetCollegesQuery({});
+  const [registerCandidate, { isLoading: isRegistering }] = useRegisterCandidateMutation();
+
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      fullName: '',
+      name: '',
       email: '',
+      password: '',
       phoneNumber: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       role: '',
-      organization: '',
+      college: '',
       govIdType: '',
       govIdNumber: '',
     },
   });
 
   async function onSubmit(data: RegistrationFormValues) {
-    setIsLoading(true);
-    console.log('Registration data:', data);
-
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    toast({
-      title: 'Registration Successful',
-      description: 'Your account has been created. Please log in.',
-    });
-
-    setIsLoading(false);
-    router.push('/');
+    try {
+        await registerCandidate(data).unwrap();
+        toast({
+            title: 'Registration Successful',
+            description: 'Your account has been created. If you registered as an examiner, your account is pending approval.',
+        });
+        router.push('/');
+    } catch (err: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Registration Failed',
+            description: err.data?.message || "An unexpected error occurred.",
+        });
+    }
   }
-
-  const collegeOptions = [
-    ...registrationOptions.colleges.map((c) => ({ label: c.name, value: c.name })),
-  ];
+  
+  const collegeOptions = colleges.map((c: any) => ({ label: c.name, value: c.name }));
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -107,7 +115,7 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="fullName"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
@@ -136,7 +144,24 @@ export default function RegisterPage() {
                   )}
                 />
               </div>
-               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <FormField
                   control={form.control}
                   name="phoneNumber"
@@ -154,6 +179,8 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
+              </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                  <FormField
                   control={form.control}
                   name="timezone"
@@ -167,102 +194,99 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <FormField
+                 <FormField
                   control={form.control}
                   name="role"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {registrationOptions.roles.map((role) => (
-                            <SelectItem key={role.value} value={role.value}>
-                              {role.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isLoadingRoles ? <Skeleton className="h-10 w-full" /> : (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {roles.map((role: any) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                {role.label}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="organization"
+                  name="college"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Organization / Institute</FormLabel>
+                      {isLoadingColleges ? <Skeleton className="h-10 w-full" /> : (
                         <Combobox
                           options={collegeOptions}
                           value={field.value}
-                          onChange={(value) => form.setValue('organization', value)}
+                          onChange={(value) => form.setValue('college', value)}
                           placeholder="Select or search..."
                           searchPlaceholder="Search colleges..."
                           notFoundMessage="No college found."
                         />
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="govIdType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Government ID Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="govIdType"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>ID Type</FormLabel>
+                        {isLoadingIdTypes ? <Skeleton className="h-10 w-full" /> : (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="ID Type" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {idTypes.map((idType: any) => (
+                                    <SelectItem key={idType.value} value={idType.value}>
+                                    {idType.label}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="govIdNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>ID Number</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="ID Type" />
-                          </SelectTrigger>
+                            <Input placeholder="ID Number" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {registrationOptions.govIdTypes.map((idType) => (
-                            <SelectItem
-                              key={idType.value}
-                              value={idType.value}
-                            >
-                              {idType.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="govIdNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ID Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ID Number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Registering...' : 'Register'}
+              <Button type="submit" className="w-full" disabled={isRegistering}>
+                {isRegistering ? 'Registering...' : 'Register'}
               </Button>
             </form>
           </Form>

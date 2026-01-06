@@ -24,6 +24,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -57,45 +58,19 @@ import {
     Globe,
     CreditCard,
     Trash,
+    ThumbsUp,
+    ThumbsDown,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-
-type Candidate = {
-  id: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
-  timezone: string;
-  role: string;
-  college: string;
-  govIdType: string;
-  govIdNumber: string;
-  examId: string;
-  status: 'Finished' | 'Flagged' | 'In Progress' | 'Not Started';
-  score: number;
-};
-
-const candidatesData: Candidate[] = [
-  { id: 'user1', name: 'Alice Johnson', email: 'alice.j@example.com', phoneNumber: '123-456-7890', timezone: 'America/Los_Angeles', role: 'Student', college: 'Stanford University', govIdType: 'Passport', govIdNumber: 'A1234567', examId: 'CS101-FINAL', status: 'Finished', score: 88 },
-  { id: 'user2', name: 'Bob Williams', email: 'bob.w@example.com', phoneNumber: '234-567-8901', timezone: 'America/New_York', role: 'Student', college: 'MIT', govIdType: 'Driver\'s License', govIdNumber: 'B9876543', examId: 'MA203-MIDTERM', status: 'Flagged', score: 65 },
-  { id: 'user3', name: 'Charlie Brown', email: 'charlie.b@example.com', phoneNumber: '345-678-9012', timezone: 'Europe/London', role: 'Professional', college: 'Harvard University', govIdType: 'National ID', govIdNumber: 'C5678123', examId: 'PHY201-QUIZ3', status: 'In Progress', score: 72 },
-  { id: 'user4', name: 'Diana Miller', email: 'diana.m@example.com', phoneNumber: '456-789-0123', timezone: 'America/Los_Angeles', role: 'Student', college: 'UC Berkeley', govIdType: 'Passport', govIdNumber: 'D8765432', examId: 'CS101-FINAL', status: 'Finished', score: 95 },
-  { id: 'user5', name: 'Eve Davis', email: 'eve.d@example.com', phoneNumber: '567-890-1234', timezone: 'America/Chicago', role: 'Student', college: 'Yale University', govIdType: 'Driver\'s License', govIdNumber: 'E4567890', examId: 'BIO-101', status: 'Not Started', score: 0 },
-  { id: 'user6', name: 'Frank White', email: 'frank.w@example.com', phoneNumber: '678-901-2345', timezone: 'Europe/Paris', role: 'Professional', college: 'Princeton University', govIdType: 'Passport', govIdNumber: 'F1122334', examId: 'CS101-FINAL', status: 'Finished', score: 91 },
-  { id: 'user7', name: 'Grace Lee', email: 'grace.l@example.com', phoneNumber: '789-012-3456', timezone: 'Asia/Tokyo', role: 'Student', college: 'Columbia University', govIdType: 'National ID', govIdNumber: 'G5566778', examId: 'MA203-MIDTERM', status: 'In Progress', score: 82 },
-  { id: 'user8', name: 'Henry Scott', email: 'henry.s@example.com', phoneNumber: '890-123-4567', timezone: 'Australia/Sydney', role: 'Student', college: 'University of Chicago', govIdType: 'Driver\'s License', govIdNumber: 'H9988776', examId: 'PHY201-QUIZ3', status: 'Flagged', score: 55 },
-  { id: 'user9', name: 'Ivy Green', email: 'ivy.g@example.com', phoneNumber: '901-234-5678', timezone: 'America/New_York', role: 'Professional', college: 'Duke University', govIdType: 'Passport', govIdNumber: 'I2233445', examId: 'BIO-101', status: 'Not Started', score: 0 },
-  { id: 'user10', name: 'Jack King', email: 'jack.k@example.com', phoneNumber: '012-345-6789', timezone: 'Europe/Berlin', role: 'Student', college: 'Northwestern University', govIdType: 'National ID', govIdNumber: 'J6677889', examId: 'CS101-FINAL', status: 'Finished', score: 78 },
-  { id: 'user11', name: 'Kate Hill', email: 'kate.h@example.com', phoneNumber: '111-222-3333', timezone: 'America/Denver', role: 'Student', college: 'Johns Hopkins University', govIdType: 'Passport', govIdNumber: 'K1212121', examId: 'MA203-MIDTERM', status: 'In Progress', score: 85 },
-  { id: 'user12', name: 'Liam Hall', email: 'liam.h@example.com', phoneNumber: '444-555-6666', timezone: 'America/Los_Angeles', role: 'Professional', college: 'University of Pennsylvania', govIdType: 'Driver\'s License', govIdNumber: 'L3434343', examId: 'PHY201-QUIZ3', status: 'Finished', score: 98 },
-  { id: 'user13', name: 'Mia Adams', email: 'mia.a@example.com', phoneNumber: '777-888-9999', timezone: 'America/New_York', role: 'Student', college: 'Caltech', govIdType: 'National ID', govIdNumber: 'M5656565', examId: 'BIO-101', status: 'Not Started', score: 0 },
-  { id: 'user14', name: 'Noah Baker', email: 'noah.b@example.com', phoneNumber: '121-314-151', timezone: 'Europe/London', role: 'Student', college: 'Cornell University', govIdType: 'Passport', govIdNumber: 'N7878787', examId: 'CS101-FINAL', status: 'Flagged', score: 71 },
-  { id: 'user15', name: 'Olivia Clark', email: 'olivia.c@example.com', phoneNumber: '617-181-920', timezone: 'America/Chicago', role: 'Professional', college: 'Brown University', govIdType: 'Driver\'s License', govIdNumber: 'O9090909', examId: 'MA203-MIDTERM', status: 'In Progress', score: 79 },
-];
+import { useGetCandidatesQuery, useUpdateCandidateMutation, useDeleteCandidateMutation } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import type { Candidate } from '@/models/candidate.model.js';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const CandidateModal = ({
     modalState,
@@ -181,7 +156,7 @@ const CandidateModal = ({
                                         <FileText className="h-4 w-4 text-muted-foreground" />
                                         <div>
                                             <p className="text-muted-foreground text-xs">Exam ID</p>
-                                            <p className="font-medium">{candidate.examId}</p>
+                                            <p className="font-medium">{candidate.examId || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -217,11 +192,11 @@ const CandidateModal = ({
                                 <div className="space-y-4">
                                     <div className="text-center">
                                         <p className="text-sm text-muted-foreground">Final Score</p>
-                                        <p className={`text-6xl font-bold ${getScoreColor(candidate.score)}`}>{candidate.score}<span className="text-2xl text-muted-foreground">/100</span></p>
+                                        <p className={`text-6xl font-bold ${getScoreColor(candidate.score || 0)}`}>{candidate.score || 0}<span className="text-2xl text-muted-foreground">/100</span></p>
                                     </div>
                                     <div className="space-y-2">
                                         <Progress value={candidate.score} />
-                                        <p className="text-center text-sm font-medium">{candidate.score >= 60 ? 'Passed' : 'Failed'}</p>
+                                        <p className="text-center text-sm font-medium">{(candidate.score || 0) >= 60 ? 'Passed' : 'Failed'}</p>
                                     </div>
                                 </div>
                             )}
@@ -237,14 +212,22 @@ export default function CandidatesPage() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
+
+    // RTK Query Hooks
+    const { data: candidatesData = [], isLoading: isFetchingCandidates } = useGetCandidatesQuery({});
+    const [updateCandidate, { isLoading: isUpdating }] = useUpdateCandidateMutation();
+    const [deleteCandidateApi, { isLoading: isDeleting }] = useDeleteCandidateMutation();
 
     // Modal state
     const [modalState, setModalState] = useState<{ type: 'view' | 'result' | null; candidate: Candidate | null }>({ type: null, candidate: null });
-    const [deleteCandidate, setDeleteCandidate] = useState<Candidate | null>(null);
+    const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
+    const [candidateToReject, setCandidateToReject] = useState<Candidate | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
 
     // Search params
     const page = searchParams.get('page') ?? '1';
-    const pageSize = searchParams.get('pageSize') ?? '5';
+    const pageSize = searchParams.get('pageSize') ?? '10';
     const searchTerm = searchParams.get('search') ?? '';
     const sortParam = searchParams.get('sort');
 
@@ -265,19 +248,35 @@ export default function CandidatesPage() {
     };
 
     const handleDeleteClick = (candidate: Candidate) => {
-        setDeleteCandidate(candidate);
+        setCandidateToDelete(candidate);
     };
 
-    const handleDeleteConfirm = () => {
-        if (deleteCandidate) {
-            console.log(`Deleting candidate ${deleteCandidate.id}`);
-            setDeleteCandidate(null);
+    const handleDeleteConfirm = async () => {
+        if (candidateToDelete) {
+            try {
+                await deleteCandidateApi(candidateToDelete._id).unwrap();
+                toast({ title: 'Success', description: 'Candidate deleted successfully.' });
+                setCandidateToDelete(null);
+            } catch (err: any) {
+                toast({ variant: 'destructive', title: 'Error', description: err.data?.message || 'Failed to delete candidate.' });
+            }
         }
     };
+    
+    const handleApproval = async (candidate: Candidate, newStatus: 'Approved' | 'Rejected', reason?: string) => {
+        try {
+            await updateCandidate({ id: candidate._id, approvalStatus: newStatus, rejectionReason: reason }).unwrap();
+            toast({ title: 'Success', description: `Candidate has been ${newStatus.toLowerCase()}.`});
+            if(candidateToReject) setCandidateToReject(null);
+            setRejectionReason('');
+        } catch (err: any) {
+             toast({ variant: 'destructive', title: 'Error', description: err.data?.message || 'Failed to update candidate status.' });
+        }
+    }
 
 
     interface DataTableColumnDef<TData> {
-        accessorKey: keyof TData | 'actions';
+        accessorKey: keyof TData | 'actions' | '_id';
         header: {
           title: string;
           sortable?: boolean;
@@ -288,70 +287,50 @@ export default function CandidatesPage() {
     const columns: DataTableColumnDef<Candidate>[] = [
         {
             accessorKey: 'name',
-            header: {
-                title: 'Name',
-                sortable: true,
-            },
+            header: { title: 'Name', sortable: true },
             cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
         },
         {
-            accessorKey: 'college',
-            header: {
-                title: 'College/Institute',
-                sortable: true,
-            },
-        },
-         {
-            accessorKey: 'role',
-            header: {
-                title: 'Role',
-                sortable: true,
-            },
-        },
-         {
-            accessorKey: 'phoneNumber',
-            header: {
-                title: 'Phone Number',
-                sortable: false,
-            },
+            accessorKey: 'email',
+            header: { title: 'Email', sortable: true },
         },
         {
-            accessorKey: 'examId',
-            header: {
-                title: 'Current Exam',
-                sortable: true,
-            },
+            accessorKey: 'role',
+            header: { title: 'Role', sortable: true },
+        },
+        {
+            accessorKey: 'approvalStatus',
+            header: { title: 'Approval Status', sortable: true },
+            cell: ({ row }) => {
+                const status = row.original.approvalStatus;
+                return (
+                    <Badge variant={
+                        status === 'Approved' ? 'secondary' :
+                        status === 'Rejected' ? 'destructive' :
+                        'default'
+                    }>{status}</Badge>
+                )
+            }
         },
         {
             accessorKey: 'status',
-            header: {
-                title: 'Status',
-                sortable: true,
-            },
+            header: { title: 'Exam Status', sortable: true },
             cell: ({ row }) => {
                 const status = row.getValue('status') as Candidate['status'];
                 return (
-                    <Badge
-                        variant={
-                            status === 'Flagged'
-                            ? 'destructive'
-                            : status === 'Finished'
-                            ? 'secondary'
-                            : status === 'In Progress'
-                            ? 'default'
-                            : 'outline'
-                        }
-                        >
-                        {status}
+                    <Badge variant={ status ? (
+                        status === 'Flagged' ? 'destructive'
+                        : status === 'Finished' ? 'secondary'
+                        : status === 'In Progress' ? 'default' : 'outline') : 'outline'
+                    }>
+                        {status || 'N/A'}
                     </Badge>
                 );
             },
         },
         {
             accessorKey: 'actions',
-            header: {
-                title: 'Actions',
-            },
+            header: { title: 'Actions' },
             cell: ({ row }) => (
                 <div className="text-right">
                     <DropdownMenu>
@@ -363,13 +342,22 @@ export default function CandidatesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        {row.original.approvalStatus === 'Pending' && (
+                            <>
+                                <DropdownMenuItem onClick={() => handleApproval(row.original, 'Approved')}>
+                                    <ThumbsUp className="mr-2 h-4 w-4" /> Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setCandidateToReject(row.original)}>
+                                    <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                            </>
+                        )}
                         <DropdownMenuItem onClick={() => handleOpenModal('view', row.original)}>View Details</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleOpenModal('result', row.original)}>Result</DropdownMenuItem>
-                        <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDeleteClick(row.original)}
-                        >
-                            Delete
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(row.original)}>
+                            <Trash className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                     </DropdownMenu>
@@ -409,8 +397,9 @@ export default function CandidatesPage() {
         const finished = candidatesData.filter(c => c.status === 'Finished').length;
         const flagged = candidatesData.filter(c => c.status === 'Flagged').length;
         const inProgress = candidatesData.filter(c => c.status === 'In Progress').length;
-        return { total, finished, flagged, inProgress };
-    }, []);
+        const pendingApproval = candidatesData.filter(c => c.approvalStatus === 'Pending').length;
+        return { total, finished, flagged, inProgress, pendingApproval };
+    }, [candidatesData]);
 
     // Debounce search term
     React.useEffect(() => {
@@ -420,15 +409,12 @@ export default function CandidatesPage() {
         return () => clearTimeout(timer);
     }, [debouncedSearchTerm, pathname, router, createQueryString]);
 
-    // Mock fetch data
     const fetchData = React.useCallback(async (options: {
         pageIndex: number;
         pageSize: number;
         searchTerm: string;
         sort: { id: string; desc: boolean } | null;
     }) => {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
         let filteredCandidates = candidatesData;
 
         if (options.searchTerm) {
@@ -444,8 +430,10 @@ export default function CandidatesPage() {
         if (options.sort) {
             filteredCandidates.sort((a, b) => {
                 const key = options.sort!.id as keyof Candidate;
-                if (a[key] < b[key]) return options.sort!.desc ? 1 : -1;
-                if (a[key] > b[key]) return options.sort!.desc ? -1 : 1;
+                const valA = (a as any)[key] || '';
+                const valB = (b as any)[key] || '';
+                if (valA < valB) return options.sort!.desc ? 1 : -1;
+                if (valA > valB) return options.sort!.desc ? -1 : 1;
                 return 0;
             });
         }
@@ -458,9 +446,8 @@ export default function CandidatesPage() {
             data: pageData,
             pageCount: Math.ceil(filteredCandidates.length / options.pageSize),
         };
-    }, []);
+    }, [candidatesData]);
 
-    // Fetch data effect
     React.useEffect(() => {
         setIsLoading(true);
         fetchData({
@@ -473,14 +460,14 @@ export default function CandidatesPage() {
             setPageCount(pageCount);
             setIsLoading(false);
         });
-    }, [pageIndex, pageSize, searchTerm, sort, fetchData]);
+    }, [pageIndex, pageSize, searchTerm, sort, fetchData, candidatesData]);
 
 
     const handleSort = (columnId: string) => {
         let newSort;
         if (sort && sort.id === columnId) {
             if (sort.desc) {
-                newSort = null; // cycle off
+                newSort = null;
             } else {
                 newSort = `${columnId}.desc`;
             }
@@ -495,18 +482,27 @@ export default function CandidatesPage() {
             <div>
                 <h1 className="text-2xl font-bold">Candidates</h1>
                 <p className="text-muted-foreground">
-                    View and manage all registered candidates.
+                    View and manage all registered candidates and examiner approvals.
                 </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.pendingApproval}</div>
                 </CardContent>
                 </Card>
                 <Card>
@@ -520,20 +516,11 @@ export default function CandidatesPage() {
                 </Card>
                 <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Flagged</CardTitle>
+                    <CardTitle className="text-sm font-medium">Flagged Sessions</CardTitle>
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{stats.flagged}</div>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.inProgress}</div>
                 </CardContent>
                 </Card>
             </div>
@@ -572,7 +559,7 @@ export default function CandidatesPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? (
+                        {isLoading || isFetchingCandidates ? (
                             Array.from({ length: Number(pageSize) }).map((_, i) => (
                                 <TableRow key={i}>
                                     {columns.map((col, j) => (
@@ -583,8 +570,8 @@ export default function CandidatesPage() {
                                 </TableRow>
                             ))
                         ) : data.length > 0 ? (
-                        data.map((row, index) => (
-                            <TableRow key={index}>
+                        data.map((row) => (
+                            <TableRow key={row._id}>
                             {columns.map((column) => (
                                 <TableCell key={String(column.accessorKey)}>
                                 {column.cell
@@ -678,22 +665,49 @@ export default function CandidatesPage() {
     return (
         <>
             <CandidateModal modalState={modalState} onOpenChange={(open) => !open && handleCloseModal()} />
-            {deleteCandidate && (
-                 <AlertDialog open={!!deleteCandidate} onOpenChange={(open) => !open && setDeleteCandidate(null)}>
+            {candidateToDelete && (
+                 <AlertDialog open={!!candidateToDelete} onOpenChange={(open) => !open && setCandidateToDelete(null)}>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently delete the candidate "{deleteCandidate.name}".
+                          This will permanently delete the candidate "{candidateToDelete.name}".
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDeleteCandidate(null)}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                        <AlertDialogCancel onClick={() => setCandidateToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting}>
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
             )}
+             <Dialog open={!!candidateToReject} onOpenChange={(open) => !open && setCandidateToReject(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reason for Rejection</DialogTitle>
+                        <DialogDescription>
+                            Provide a reason for rejecting "{candidateToReject?.name}". This will be stored for your records.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="rejectionReason">Rejection Notes</Label>
+                        <Textarea 
+                            id="rejectionReason"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="e.g., The provided identification was not clear."
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCandidateToReject(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={() => handleApproval(candidateToReject!, 'Rejected', rejectionReason)} disabled={isUpdating}>
+                            {isUpdating ? 'Confirming...' : 'Confirm Rejection'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <PageContent />
         </>
     );

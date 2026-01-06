@@ -14,6 +14,10 @@ const candidateSchema = new mongoose.Schema({
         lowercase: true,
         match: [/\S+@\S+\.\S+/, 'is invalid'],
     },
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+    },
     role: {
         type: String,
         required: true,
@@ -33,10 +37,28 @@ const candidateSchema = new mongoose.Schema({
     govIdNumber: {
         type: String,
     },
-    // This could link to tests they are assigned to, etc.
-    // For now, we keep it simple.
+    approvalStatus: {
+        type: String,
+        enum: ['Approved', 'Pending', 'Rejected'],
+        default: 'Approved',
+    },
+    rejectionReason: {
+        type: String,
+        trim: true,
+    },
+    examId: String, // Keep these for mock data consistency for now
+    status: String,
+    score: Number,
 }, {
     timestamps: true
+});
+
+// Pre-save hook to set approval status based on role
+candidateSchema.pre('save', function(next) {
+    if (this.role === 'examiner' && this.isNew) {
+        this.approvalStatus = 'Pending';
+    }
+    next();
 });
 
 candidateSchema.index({ email: 1 });
@@ -44,5 +66,3 @@ candidateSchema.index({ email: 1 });
 const Candidate = mongoose.models.Candidate || mongoose.model("Candidate", candidateSchema);
 
 export default Candidate;
-
-    
