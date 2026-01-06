@@ -1,7 +1,7 @@
 
 'use client';
-import { useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { AlertCircle, Check, ShieldCheck, Video, CheckCircle2 } from 'lucide-react';
@@ -17,7 +17,35 @@ export default function ExamPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const params = useParams();
+  const searchParams = useSearchParams();
   const examId = params.id as string;
+  
+  useEffect(() => {
+    // This effect checks if the page was loaded with a "submitted" query param,
+    // which happens after a successful submission from the confirm page.
+    if (searchParams.get('submitted') === 'true') {
+        const savedState = localStorage.getItem(`examState-${examId}`);
+        if (savedState) {
+            const { answers, totalQuestions } = JSON.parse(savedState);
+            const details: SubmissionDetails = {
+                totalQuestions: totalQuestions,
+                attempted: Object.keys(answers).length,
+                unattempted: totalQuestions - Object.keys(answers).length,
+                submissionTime: new Date(),
+            };
+            handleSuccessfulSubmit(details);
+        } else {
+            // Fallback if local storage is cleared or fails
+             const details: SubmissionDetails = {
+                totalQuestions: 10, // Mock data
+                attempted: 10,
+                unattempted: 0,
+                submissionTime: new Date(),
+            };
+            handleSuccessfulSubmit(details);
+        }
+    }
+  }, [examId, searchParams]);
 
   const handleStartExam = async () => {
     setError(null);
@@ -32,23 +60,23 @@ export default function ExamPage() {
     }
   };
 
-  const handleTermination = (reason: string) => {
+  const handleTermination = useCallback((reason: string) => {
     setTerminationReason(reason);
     setIsTerminated(true);
     setIsExamStarted(false);
     if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  };
+  }, []);
 
-  const handleSuccessfulSubmit = (details: SubmissionDetails) => {
+  const handleSuccessfulSubmit = useCallback((details: SubmissionDetails) => {
     setSubmissionDetails(details);
     setIsSubmitted(true);
     setIsExamStarted(false);
      if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  };
+  }, []);
 
   const renderContent = () => {
     if (isExamStarted) {

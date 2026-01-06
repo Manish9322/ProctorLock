@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { SubmitExamButton } from './submit-exam-button';
+import { useRouter } from 'next/navigation';
 
 type ActivityLog = {
   type: 'focus' | 'activity' | 'snapshot';
@@ -87,14 +88,14 @@ const QuestionNavigator = ({
   answers,
   markedForReview,
   onSelectQuestion,
-  onConfirmSubmit,
+  onNavigateToConfirm,
 }: {
   questions: Question[];
   currentQuestionIndex: number;
   answers: { [key: string]: string };
   markedForReview: { [key: string]: boolean };
   onSelectQuestion: (index: number) => void;
-  onConfirmSubmit: () => Promise<void>;
+  onNavigateToConfirm: () => void;
 }) => {
   const getStatus = (index: number): QuestionStatus => {
     const questionId = questions[index].id;
@@ -153,7 +154,7 @@ const QuestionNavigator = ({
        <CardFooter className="mt-auto flex-col items-stretch p-4 gap-2">
             <SubmitExamButton
                 unansweredQuestionsCount={unansweredQuestionsCount}
-                onConfirmSubmit={onConfirmSubmit}
+                onNavigateToConfirm={onNavigateToConfirm}
             />
         </CardFooter>
     </Card>
@@ -170,6 +171,7 @@ export const ExamSession = ({
   onTerminate: (reason: string) => void;
   onSuccessfulSubmit: (details: SubmissionDetails) => void;
 }) => {
+  const router = useRouter();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -180,9 +182,7 @@ export const ExamSession = ({
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
 
   const handleFinalSubmit = useCallback(async () => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    // This function will be called from the confirmation page
     const details: SubmissionDetails = {
         totalQuestions: questions.length,
         attempted: Object.keys(answers).length,
@@ -190,8 +190,19 @@ export const ExamSession = ({
         submissionTime: new Date(),
     };
     onSuccessfulSubmit(details);
-
   }, [questions, answers, onSuccessfulSubmit]);
+
+  const handleNavigateToConfirm = () => {
+    // Save current state to localStorage so the confirm page can read it
+    const examState = {
+        answers,
+        markedForReview,
+        timeLeft,
+        totalQuestions: questions.length,
+    };
+    localStorage.setItem(`examState-${examId}`, JSON.stringify(examState));
+    router.push(`/exam/${examId}/confirm`);
+  };
   
 
   const terminateExam = useCallback((reason: string) => {
@@ -306,7 +317,7 @@ export const ExamSession = ({
                     answers={answers}
                     markedForReview={markedForReview}
                     onSelectQuestion={setCurrentQuestionIndex}
-                    onConfirmSubmit={handleFinalSubmit}
+                    onNavigateToConfirm={handleNavigateToConfirm}
                 />
             </div>
         </main>
