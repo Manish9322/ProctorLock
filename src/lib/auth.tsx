@@ -9,7 +9,7 @@ import {
   useCallback,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 export type Role = 'candidate' | 'examiner' | 'admin' | null;
 
