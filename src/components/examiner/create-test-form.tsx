@@ -105,6 +105,10 @@ type TestScheduling = {
   gracePeriod: number;
 };
 
+type TestQuestions = {
+    count: number;
+}
+
 type TestRules = {
   fullscreen: boolean;
   focusHandling: string;
@@ -132,10 +136,9 @@ export function CreateTestForm() {
     duration: 60,
     gracePeriod: 5,
   });
-  const [questions, setQuestions] = useState<Question[]>([
-      { id: 'q1', type: 'mcq', text: 'What is the capital of France?', options: ['Paris', 'London', 'Berlin', 'Madrid'], correctAnswer: 'Paris', marks: 1, negativeMarks: 0},
-      { id: 'q2', type: 'descriptive', text: 'Explain the theory of relativity.', marks: 5, negativeMarks: 0},
-  ]);
+  const [testQuestions, setTestQuestions] = useState<TestQuestions>({
+    count: 10,
+  });
   const [testRules, setTestRules] = useState<TestRules>({
     fullscreen: true,
     focusHandling: 'warn_terminate',
@@ -146,7 +149,7 @@ export function CreateTestForm() {
     disableRightClick: false,
   });
   
-  const allState = { testDetails, testScheduling, questions, testRules };
+  const allState = { testDetails, testScheduling, testQuestions, testRules };
 
 
   const goToNextStep = () => {
@@ -170,7 +173,7 @@ export function CreateTestForm() {
       case 'scheduling':
         return <TestSchedulingStep scheduling={testScheduling} setScheduling={setTestScheduling} />;
       case 'questions':
-        return <TestQuestionsStep questions={questions} setQuestions={setQuestions} />;
+        return <TestQuestionsStep questions={testQuestions} setQuestions={setTestQuestions} />;
       case 'rules':
         return <TestRulesStep rules={testRules} setRules={setTestRules} />;
       case 'review':
@@ -218,9 +221,9 @@ export function CreateTestForm() {
                 {
                   details: 'Provide basic information for your test.',
                   scheduling: 'Set up the date, time, and duration.',
-                  questions: 'Add and manage the questions for this test.',
+                  questions: 'Define the number of questions to be randomly selected from the question bank.',
                   rules: 'Define the proctoring rules and security settings.',
-                  review: 'Review all settings before publishing the test.',
+                  review: 'Review all settings before submitting the test for approval.',
                 }[steps[currentStep].id]
               }
             </CardDescription>
@@ -241,7 +244,7 @@ export function CreateTestForm() {
             ) : (
               <div className="flex gap-2">
                   <Button variant="secondary">Save as Draft</Button>
-                  <Button>Publish Test</Button>
+                  <Button>Submit for Approval</Button>
               </div>
             )}
           </CardFooter>
@@ -371,7 +374,7 @@ function TestSchedulingStep({ scheduling, setScheduling }: { scheduling: TestSch
   );
 }
 
-function QuestionDialog({
+export function QuestionDialog({
   question,
   onSave,
   children,
@@ -524,88 +527,28 @@ function QuestionDialog({
   );
 }
 
-function TestQuestionsStep({ questions, setQuestions }: { questions: Question[], setQuestions: React.Dispatch<React.SetStateAction<Question[]>>}) {
-
-  const handleSaveQuestion = (question: Question) => {
-    const existingIndex = questions.findIndex((q) => q.id === question.id);
-    if (existingIndex > -1) {
-      const updatedQuestions = [...questions];
-      updatedQuestions[existingIndex] = question;
-      setQuestions(updatedQuestions);
-    } else {
-      setQuestions([...questions, question]);
-    }
-  };
-
-  const handleDeleteQuestion = (id: string) => {
-    setQuestions(questions.filter((q) => q.id !== id));
-  };
-  
-  const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-            <h3 className="font-semibold">Questions ({questions.length})</h3>
-            <p className="text-sm text-muted-foreground">Total Marks: {totalMarks}</p>
+function TestQuestionsStep({ questions, setQuestions }: { questions: TestQuestions, setQuestions: React.Dispatch<React.SetStateAction<TestQuestions>>}) {
+    return (
+        <div className="space-y-4">
+            <Alert>
+                <BookCopy className="h-4 w-4" />
+                <AlertTitle>Question Bank Integration</AlertTitle>
+                <AlertDescription>
+                    Questions will be randomly selected from the central Question Bank managed by the admin. Please specify the number of questions you want for this test.
+                </AlertDescription>
+            </Alert>
+            <div className="space-y-2 max-w-xs">
+                <Label htmlFor="question-count">Number of Questions</Label>
+                <Input 
+                    id="question-count"
+                    type="number" 
+                    value={questions.count} 
+                    onChange={e => setQuestions({ count: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 25" 
+                />
+            </div>
         </div>
-        <QuestionDialog onSave={handleSaveQuestion}>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Question
-          </Button>
-        </QuestionDialog>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>#</TableHead>
-              <TableHead>Question</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-center">Marks</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {questions.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No questions added yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              questions.map((q, index) => (
-                <TableRow key={q.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell className="max-w-sm truncate font-medium">
-                    {q.text}
-                  </TableCell>
-                  <TableCell className="uppercase">{q.type}</TableCell>
-                  <TableCell className="text-center">{q.marks}</TableCell>
-                  <TableCell className="text-right">
-                     <QuestionDialog question={q} onSave={handleSaveQuestion}>
-                        <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                     </QuestionDialog>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteQuestion(q.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
+    );
 }
 
 function TestRulesStep({ rules, setRules }: { rules: TestRules, setRules: React.Dispatch<React.SetStateAction<TestRules>>}) {
@@ -731,22 +674,21 @@ function ReviewItem({ label, value, onEdit }: {label: string, value: React.React
 }
 
 function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, onEdit: (index: number) => void}) {
-    const { testDetails, testScheduling, questions, testRules } = allState;
-    const totalMarks = questions.reduce((sum: number, q: Question) => sum + q.marks, 0);
+    const { testDetails, testScheduling, testQuestions, testRules } = allState;
 
-    const isReadyForPublish = testDetails.name && questions.length > 0;
+    const isReadyForPublish = testDetails.name && testQuestions.count > 0;
 
     return (
         <div className="space-y-8">
             {!isReadyForPublish && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4"/>
-                    <AlertTitle>Cannot Publish Test</AlertTitle>
+                    <AlertTitle>Cannot Submit for Approval</AlertTitle>
                     <AlertDescription>
                         The test is missing required information. Please ensure the following are complete:
                         <ul className="list-disc pl-5 mt-2">
                             {!testDetails.name && <li>Test Name</li>}
-                            {questions.length === 0 && <li>At least one question</li>}
+                            {testQuestions.count === 0 && <li>Number of questions must be greater than zero</li>}
                         </ul>
                     </AlertDescription>
                 </Alert>
@@ -782,8 +724,7 @@ function TestReviewStep({ allState, onEdit }: { allState: Record<string, any>, o
                     <Button variant="outline" size="sm" onClick={() => onEdit(2)}>Edit</Button>
                 </CardHeader>
                 <CardContent>
-                     <ReviewItem label="Total Questions" value={questions.length} />
-                     <ReviewItem label="Total Marks" value={totalMarks} />
+                     <ReviewItem label="Number of Questions" value={`${testQuestions.count} (randomly selected)`} />
                 </CardContent>
             </Card>
             

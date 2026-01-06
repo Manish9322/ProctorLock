@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit } from 'lucide-react';
+import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, ThumbsUp, ThumbsDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,22 +30,27 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
+type TestStatus = 'Active' | 'Finished' | 'Draft';
+type ApprovalStatus = 'Approved' | 'Pending' | 'Rejected';
+
 type Test = {
     id: string;
     title: string;
     candidates: number;
-    status: 'Active' | 'Finished' | 'Draft';
+    status: TestStatus;
+    approval: ApprovalStatus;
+    createdBy: string;
 };
 
 const testsData: Test[] = [
-  { id: 'CS101-FINAL', title: 'Intro to CS - Final', candidates: 150, status: 'Active' },
-  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', candidates: 88, status: 'Active' },
-  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', candidates: 120, status: 'Finished' },
-  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', candidates: 0, status: 'Draft' },
-  { id: 'HIST202-PAPER', title: 'American History II - Paper', candidates: 75, status: 'Active' },
-  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', candidates: 95, status: 'Finished' },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', candidates: 200, status: 'Active' },
-  { id: 'ART-HISTORY', title: 'Art History - Final Project', candidates: 40, status: 'Draft' },
+  { id: 'CS101-FINAL', title: 'Intro to CS - Final', candidates: 150, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'MA203-MIDTERM', title: 'Calculus II - Midterm', candidates: 88, status: 'Active', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'PHY201-QUIZ3', title: 'University Physics I - Quiz 3', candidates: 120, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', candidates: 0, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com' },
+  { id: 'HIST202-PAPER', title: 'American History II - Paper', candidates: 75, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com' },
+  { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', candidates: 95, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com' },
+  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', candidates: 0, status: 'Draft', approval: 'Rejected', createdBy: 'examiner2@example.com' },
+  { id: 'ART-HISTORY', title: 'Art History - Final Project', candidates: 40, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com' },
 ];
 
 interface DataTableColumnDef<TData> {
@@ -54,7 +59,7 @@ interface DataTableColumnDef<TData> {
       title: string;
       sortable?: boolean;
     };
-    cell?: (props: { row: { getValue: (key: string) => any } }) => React.ReactNode;
+    cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
 }
 
 const columns: DataTableColumnDef<Test>[] = [
@@ -105,9 +110,33 @@ const columns: DataTableColumnDef<Test>[] = [
     },
   },
   {
+    accessorKey: 'approval',
+    header: {
+      title: 'Approval',
+      sortable: true,
+    },
+    cell: ({ row }) => {
+      const status = row.getValue('approval') as Test['approval'];
+      return (
+        <Badge
+          variant={
+            status === 'Approved'
+              ? 'secondary'
+              : status === 'Rejected'
+              ? 'destructive'
+              : 'default'
+          }
+          className={status === 'Approved' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : ''}
+        >
+          {status}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: 'actions',
     header: { title: 'Actions' },
-    cell: () => (
+    cell: ({ row }) => (
       <div className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -118,8 +147,17 @@ const columns: DataTableColumnDef<Test>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>View Results</DropdownMenuItem>
+            {row.original.approval === 'Pending' && (
+                <>
+                    <DropdownMenuItem>
+                        <ThumbsUp className="mr-2 h-4 w-4 text-green-500" /> Approve
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">
+                        <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+                    </DropdownMenuItem>
+                </>
+            )}
+            <DropdownMenuItem>View Details</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
               Delete
             </DropdownMenuItem>
@@ -147,7 +185,7 @@ export default function TestsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
     
-    const searchableColumns: (keyof Test)[] = ['id', 'title'];
+    const searchableColumns: (keyof Test)[] = ['id', 'title', 'createdBy'];
 
     const createQueryString = React.useCallback(
         (params: Record<string, string | number | null>) => {
@@ -176,10 +214,10 @@ export default function TestsPage() {
 
     const stats = React.useMemo(() => {
         const total = testsData.length;
-        const active = testsData.filter(t => t.status === 'Active').length;
-        const finished = testsData.filter(t => t.status === 'Finished').length;
-        const draft = testsData.filter(t => t.status === 'Draft').length;
-        return { total, active, finished, draft };
+        const pending = testsData.filter(t => t.approval === 'Pending').length;
+        const approved = testsData.filter(t => t.approval === 'Approved').length;
+        const rejected = testsData.filter(t => t.approval === 'Rejected').length;
+        return { total, pending, approved, rejected };
     }, []);
 
     // Debounce search term
@@ -206,7 +244,8 @@ export default function TestsPage() {
             filteredTests = testsData.filter(
                 (test) =>
                 test.id.toLowerCase().includes(term) ||
-                test.title.toLowerCase().includes(term)
+                test.title.toLowerCase().includes(term) ||
+                test.createdBy.toLowerCase().includes(term)
             );
         }
 
@@ -263,12 +302,11 @@ export default function TestsPage() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                <h1 className="text-2xl font-bold">Tests</h1>
+                <h1 className="text-2xl font-bold">Manage Tests</h1>
                 <p className="text-muted-foreground">
-                    Create, manage, and view results for all your tests.
+                    Review, approve, and manage all created tests.
                 </p>
                 </div>
-                <Button>Create New Test</Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -283,29 +321,29 @@ export default function TestsPage() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Tests</CardTitle>
+                        <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
                         <FileClock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.active}</div>
+                        <div className="text-2xl font-bold">{stats.pending}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Finished Tests</CardTitle>
+                        <CardTitle className="text-sm font-medium">Approved Tests</CardTitle>
                         <CheckCircle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.finished}</div>
+                        <div className="text-2xl font-bold">{stats.approved}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Drafts</CardTitle>
+                        <CardTitle className="text-sm font-medium">Rejected Tests</CardTitle>
                         <Edit className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.draft}</div>
+                        <div className="text-2xl font-bold">{stats.rejected}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -360,7 +398,7 @@ export default function TestsPage() {
                             {columns.map((column) => (
                                 <TableCell key={String(column.accessorKey)}>
                                 {column.cell
-                                    ? column.cell({ row: { getValue: (key) => (row as any)[key] } })
+                                    ? column.cell({ row: { original: row, getValue: (key) => (row as any)[key] } })
                                     : (row as any)[column.accessorKey]}
                                 </TableCell>
                             ))}
