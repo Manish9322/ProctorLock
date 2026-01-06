@@ -1,59 +1,49 @@
 
 'use client';
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ExamSession, type SubmissionDetails } from '@/components/candidate/exam-session';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { AlertCircle, Check, ShieldCheck, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Check, ShieldCheck, Video, CheckCircle2 } from 'lucide-react';
+import { type SubmissionDetails } from '@/components/candidate/exam-session';
+import { ExamContainer } from '@/components/candidate/exam-container';
 
 export default function ExamPage() {
   const [isExamStarted, setIsExamStarted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const params = useParams();
-  const examId = params.id as string;
-
   const [isTerminated, setIsTerminated] = useState(false);
   const [terminationReason, setTerminationReason] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
 
-  const handleStartExam = async () => {
-    setError(null);
-    if (containerRef.current) {
-      try {
-        await containerRef.current.requestFullscreen();
-        setIsExamStarted(true);
-      } catch (err) {
-        console.error('Could not enter fullscreen mode:', err);
-        setError('Fullscreen mode is required to start the exam. Please allow it and try again.');
-      }
-    }
+  const params = useParams();
+  const examId = params.id as string;
+
+  const handleStartExam = () => {
+    setIsExamStarted(true);
   };
 
-  const handleTermination = useCallback((reason: string) => {
+  const handleTermination = (reason: string) => {
     setTerminationReason(reason);
     setIsTerminated(true);
     setIsExamStarted(false);
     if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  }, []);
+  };
 
-  const handleSuccessfulSubmit = useCallback((details: SubmissionDetails) => {
+  const handleSuccessfulSubmit = (details: SubmissionDetails) => {
     setSubmissionDetails(details);
     setIsSubmitted(true);
     setIsExamStarted(false);
      if (document.fullscreenElement) {
         document.exitFullscreen();
     }
-  }, []);
+  };
 
   const renderContent = () => {
     if (isExamStarted) {
       return (
-        <ExamSession
+        <ExamContainer
           examId={examId}
           onTerminate={handleTermination}
           onSuccessfulSubmit={handleSuccessfulSubmit}
@@ -149,7 +139,6 @@ export default function ExamPage() {
                   <span>Ensure you have a stable internet connection.</span>
                 </li>
               </ul>
-              {error && <p className="text-sm font-medium text-destructive">{error}</p>}
               <Button size="lg" className="w-full" onClick={handleStartExam}>
                 Start Exam & Enter Fullscreen
               </Button>
@@ -164,10 +153,7 @@ export default function ExamPage() {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="min-h-screen w-full bg-background text-foreground"
-    >
+    <div className="min-h-screen w-full bg-background text-foreground">
         {renderContent()}
     </div>
   );

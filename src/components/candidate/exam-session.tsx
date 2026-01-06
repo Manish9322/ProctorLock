@@ -5,8 +5,6 @@ import {
   useState,
   useRef,
   useCallback,
-  forwardRef,
-  useImperativeHandle,
 } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -163,7 +161,7 @@ const QuestionNavigator = ({
 };
 
 
-export const ExamSession = forwardRef(function ExamSession({
+export const ExamSession = ({
   examId,
   onTerminate,
   onSuccessfulSubmit,
@@ -171,7 +169,7 @@ export const ExamSession = forwardRef(function ExamSession({
   examId: string;
   onTerminate: (reason: string) => void;
   onSuccessfulSubmit: (details: SubmissionDetails) => void;
-}, ref) {
+}) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,14 +191,8 @@ export const ExamSession = forwardRef(function ExamSession({
     };
     onSuccessfulSubmit(details);
 
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
   }, [questions, answers, onSuccessfulSubmit]);
   
-  useImperativeHandle(ref, () => ({
-      handleFinalSubmit
-  }));
 
   const terminateExam = useCallback((reason: string) => {
     onTerminate(reason);
@@ -244,8 +236,8 @@ export const ExamSession = forwardRef(function ExamSession({
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      terminateExam("Time's up! Your exam has been automatically submitted.");
       handleFinalSubmit();
+      terminateExam("Time's up! Your exam has been automatically submitted.");
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
@@ -322,4 +314,4 @@ export const ExamSession = forwardRef(function ExamSession({
         <canvas ref={canvasRef} className="hidden" />
     </div>
   );
-});
+};
