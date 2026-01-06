@@ -35,8 +35,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { TestDetailsCard } from '@/components/examiner/test-details-card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 type TestStatus = 'Active' | 'Finished' | 'Draft';
 type ApprovalStatus = 'Approved' | 'Pending' | 'Rejected';
@@ -50,7 +53,7 @@ export type Test = {
     status: TestStatus;
     approval: ApprovalStatus;
     createdBy: string;
-    // Assume other details from the create flow are here too
+    rejectionReason?: string;
     scheduling: {
         date: string;
         startTime: string;
@@ -76,7 +79,7 @@ const testsData: Test[] = [
   { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', description: 'Final exam for General Chemistry.', candidates: 0, marks: 100, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-20', startTime: '13:00', endTime: '16:00', duration: 180 }, questions: { mcqCount: 50, descriptiveCount: 10 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
   { id: 'HIST202-PAPER', title: 'American History II - Paper', description: 'Paper for American History II.', candidates: 75, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com', scheduling: { date: '2024-08-18', startTime: '09:00', endTime: '17:00', duration: 480 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
   { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', description: 'Midterm exam for Abnormal Psychology.', candidates: 95, marks: 75, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-30', startTime: '11:00', endTime: '12:30', duration: 75 }, questions: { mcqCount: 60, descriptiveCount: 3 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 0, marks: 20, status: 'Draft', approval: 'Rejected', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
+  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 0, marks: 20, status: 'Draft', approval: 'Rejected', rejectionReason: 'Test duration is too short for 20 questions.', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
   { id: 'ART-HISTORY', title: 'Art History - Final Project', description: 'Final project for Art History.', candidates: 40, marks: 150, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com', scheduling: { date: '2024-09-01', startTime: '09:00', endTime: '17:00', duration: 1440 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
 ];
 
@@ -98,16 +101,36 @@ export default function TestsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
     const [viewingTest, setViewingTest] = React.useState<Test | null>(null);
+    const [rejectingTest, setRejectingTest] = React.useState<Test | null>(null);
+    const [rejectionReason, setRejectionReason] = React.useState('');
     
     const searchableColumns: (keyof Test)[] = ['id', 'title', 'createdBy'];
 
-    const handleApprovalChange = (testId: string, newStatus: ApprovalStatus) => {
+    const handleApprovalChange = (testId: string, newStatus: ApprovalStatus, reason?: string) => {
         setData(prevData =>
             prevData.map(test =>
-                test.id === testId ? { ...test, approval: newStatus } : test
+                test.id === testId ? { ...test, approval: newStatus, rejectionReason: reason } : test
             )
         );
     };
+
+    const handleRejectConfirm = () => {
+        if (rejectingTest) {
+            handleApprovalChange(rejectingTest.id, 'Rejected', rejectionReason);
+            setRejectingTest(null);
+            setRejectionReason('');
+        }
+    };
+
+    interface DataTableColumnDef<TData> {
+        accessorKey: keyof TData | 'actions';
+        header: {
+          title: string;
+          sortable?: boolean;
+        };
+        cell?: (props: { row: { original: TData, getValue: (key: string) => any } }) => React.ReactNode;
+    }
+
 
     const columns: DataTableColumnDef<Test>[] = [
       {
@@ -172,27 +195,29 @@ export default function TestsPage() {
         },
         cell: ({ row }) => {
             const status = row.getValue('approval') as Test['approval'];
+            if (status === 'Pending') {
+                return (
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleApprovalChange(row.original.id, 'Approved')}>
+                           <ThumbsUp className="h-4 w-4 mr-2"/> Approve
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => setRejectingTest(row.original)}>
+                           <ThumbsDown className="h-4 w-4 mr-2"/> Reject
+                        </Button>
+                    </div>
+                )
+            }
             return (
-                <Select value={status} onValueChange={(value) => handleApprovalChange(row.original.id, value as ApprovalStatus)}>
-                    <SelectTrigger className={
-                        status === 'Approved' ? 'bg-green-100 dark:bg-green-900 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' :
-                        status === 'Rejected' ? 'bg-red-100 dark:bg-red-900 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200' :
-                        ''
-                    }>
-                        <SelectValue placeholder="Set status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Approved">
-                            <div className="flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-green-500" /> Approved</div>
-                        </SelectItem>
-                        <SelectItem value="Pending">
-                            <div className="flex items-center gap-2"><FileClock className="h-4 w-4 text-amber-500" /> Pending</div>
-                        </SelectItem>
-                        <SelectItem value="Rejected">
-                            <div className="flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-red-500" /> Rejected</div>
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+                <Badge
+                    variant={status === 'Approved' ? 'default' : 'destructive'}
+                    className={
+                      status === 'Approved' ? 'bg-foreground text-background' 
+                      : status === 'Rejected' ? 'bg-destructive text-destructive-foreground'
+                      : 'bg-muted text-muted-foreground'
+                    }
+                >
+                    {status}
+                </Badge>
             );
         },
       },
@@ -535,6 +560,29 @@ export default function TestsPage() {
                             <TestDetailsCard test={viewingTest} />
                        </div>
                     )}
+                </DialogContent>
+            </Dialog>
+            <Dialog open={!!rejectingTest} onOpenChange={(open) => !open && setRejectingTest(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reason for Rejection</DialogTitle>
+                        <DialogDescription>
+                            Provide a reason for rejecting the test "{rejectingTest?.title}". This will be shown to the examiner.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="rejectionReason">Rejection Notes</Label>
+                        <Textarea 
+                            id="rejectionReason"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="e.g., The test duration is too short for the number of questions."
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRejectingTest(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleRejectConfirm}>Confirm Rejection</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>

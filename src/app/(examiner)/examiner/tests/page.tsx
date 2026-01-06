@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle, UserPlus, Eye } from 'lucide-react';
+import { MoreHorizontal, Search, ArrowUpDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileText, CheckCircle, FileClock, Edit, PlusCircle, UserPlus, Eye, MessageSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,12 @@ import {
 } from '@/components/ui/dialog';
 import type { Test } from '@/app/(admin)/admin/tests/page';
 import { TestDetailsCard } from '@/components/examiner/test-details-card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 const testsData: Test[] = [
@@ -48,7 +54,7 @@ const testsData: Test[] = [
   { id: 'CHEM101-FINAL', title: 'General Chemistry - Final', description: 'Final exam for General Chemistry.', candidates: 0, marks: 100, status: 'Draft', approval: 'Pending', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-20', startTime: '13:00', endTime: '16:00', duration: 180 }, questions: { mcqCount: 50, descriptiveCount: 10 }, rules: { fullscreen: true, focusHandling: 'terminate', requireWebcam: true, snapshotInterval: '30s' } },
   { id: 'HIST202-PAPER', title: 'American History II - Paper', description: 'Paper for American History II.', candidates: 75, marks: 100, status: 'Active', approval: 'Approved', createdBy: 'examiner3@example.com', scheduling: { date: '2024-08-18', startTime: '09:00', endTime: '17:00', duration: 480 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
   { id: 'PSYCH-301', title: 'Abnormal Psychology - Midterm', description: 'Midterm exam for Abnormal Psychology.', candidates: 95, marks: 75, status: 'Finished', approval: 'Approved', createdBy: 'examiner@example.com', scheduling: { date: '2024-07-30', startTime: '11:00', endTime: '12:30', duration: 75 }, questions: { mcqCount: 60, descriptiveCount: 3 }, rules: { fullscreen: true, focusHandling: 'warn_terminate', requireWebcam: true, snapshotInterval: '1m' } },
-  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 200, marks: 20, status: 'Active', approval: 'Rejected', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
+  { id: 'ECO101-QUIZ', title: 'Principles of Microeconomics - Quiz 1', description: 'Quiz 1 for Principles of Microeconomics.', candidates: 200, marks: 20, status: 'Active', approval: 'Rejected', rejectionReason: 'Test duration is too short for 20 questions.', createdBy: 'examiner2@example.com', scheduling: { date: '2024-08-05', startTime: '16:00', endTime: '16:20', duration: 20 }, questions: { mcqCount: 20, descriptiveCount: 0 }, rules: { fullscreen: true, focusHandling: 'warn', requireWebcam: true, snapshotInterval: '1m' } },
   { id: 'ART-HISTORY', title: 'Art History - Final Project', description: 'Final project for Art History.', candidates: 40, marks: 150, status: 'Draft', approval: 'Pending', createdBy: 'examiner3@example.com', scheduling: { date: '2024-09-01', startTime: '09:00', endTime: '17:00', duration: 1440 }, questions: { mcqCount: 0, descriptiveCount: 1 }, rules: { fullscreen: false, focusHandling: 'warn', requireWebcam: false, snapshotInterval: 'none' } },
 ];
 
@@ -143,21 +149,41 @@ export default function TestsPage() {
           sortable: true,
         },
         cell: ({ row }) => {
-          const approval = row.getValue('approval') as Test['approval'];
-          return (
-            <Badge
-              variant={
-                approval === 'Approved'
-                  ? 'secondary'
-                  : approval === 'Rejected'
-                  ? 'destructive'
-                  : 'default'
-              }
-              className={approval === 'Approved' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : ''}
-            >
-              {approval}
-            </Badge>
-          );
+            const approval = row.getValue('approval') as Test['approval'];
+            const reason = row.original.rejectionReason;
+            const badge = (
+                <Badge
+                    variant={
+                        approval === 'Approved' ? 'default'
+                        : approval === 'Rejected' ? 'destructive'
+                        : 'secondary'
+                    }
+                    className={
+                        approval === 'Approved' ? 'bg-foreground text-background' 
+                        : approval === 'Rejected' ? 'bg-destructive text-destructive-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }
+                >
+                    {approval}
+                </Badge>
+            );
+
+            if (approval === 'Rejected' && reason) {
+                return (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger className="flex items-center gap-2">
+                                {badge}
+                                <MessageSquare className="h-4 w-4 text-muted-foreground"/>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="max-w-xs">{reason}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )
+            }
+            return badge;
         },
       },
       {
