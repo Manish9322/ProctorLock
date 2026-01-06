@@ -88,7 +88,9 @@ export const api = createApi({
     }),
     getAssignmentsForTest: builder.query({
       query: (testId) => `assignments/${testId}`,
-       providesTags: (result, error, testId) => [{ type: 'Assignments', id: testId }],
+       providesTags: (result, error, testId) => result 
+        ? [...result.map(({_id}) => ({ type: 'Assignments', id: _id })), { type: 'Assignments', id: 'LIST' }]
+        : [{ type: 'Assignments', id: 'LIST' }],
     }),
     assignCandidate: builder.mutation({
       query: ({ testId, candidateId }) => ({
@@ -96,19 +98,14 @@ export const api = createApi({
         method: 'POST',
         body: { test: testId, candidate: candidateId },
       }),
-      invalidatesTags: (result, error, { testId }) => [{ type: 'Assignments', id: testId }],
+      invalidatesTags: (result, error, { testId }) => [{ type: 'Assignments', id: 'LIST' }],
     }),
     unassignCandidate: builder.mutation({
       query: (assignmentId) => ({
         url: `assignments/${assignmentId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, assignmentId) => {
-        // We don't know the testId here, so we have to be less specific.
-        // A better approach would be returning the full object from the DELETE and using that.
-        // For now, just invalidate the general list for all tests.
-        return [{ type: 'Assignments' }];
-      },
+      invalidatesTags: (result, error, assignmentId) => [{ type: 'Assignments', id: 'LIST' }],
     }),
   }),
 });
@@ -129,5 +126,3 @@ export const {
     useAssignCandidateMutation,
     useUnassignCandidateMutation,
 } = api;
-
-    
