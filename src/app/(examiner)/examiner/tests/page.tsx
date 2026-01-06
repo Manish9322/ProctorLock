@@ -200,7 +200,7 @@ export default function TestsPage() {
                     <Link href={`/examiner/tests/edit/${row.original.id}`} className="flex w-full items-center"><Edit className="mr-2 h-4 w-4" /> Edit</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                    <Link href={`/examiner/assignments/${row.original.id}`} className="flex w-full items-center"><UserPlus className="mr-2 h-4 w-4" /> Assign Candidates</Link>
+                    <Link href={`/examiner/assignments/${row.original._id}`} className="flex w-full items-center"><UserPlus className="mr-2 h-4 w-4" /> Assign Candidates</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>View Results</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive">
