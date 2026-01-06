@@ -124,27 +124,27 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(true); // Temporarily bypass auth
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const allowedRoles: Role[] = ['admin'];
 
-  useEffect(() => {
-    // Give it a moment to get user from context
-    const timer = setTimeout(() => {
-        if (!isAuthenticated) {
-            router.push('/');
-        } else if (user && user.role) {
-            if (allowedRoles && !allowedRoles.includes(user.role)) {
-                router.push(`/${user.role}/dashboard`);
-            } else {
-                setIsAuthorized(true);
-            }
-        }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, user, router, allowedRoles]);
+  // useEffect(() => {
+  //   // Give it a moment to get user from context
+  //   const timer = setTimeout(() => {
+  //       if (!isAuthenticated) {
+  //           router.push('/');
+  //       } else if (user && user.role) {
+  //           if (allowedRoles && !allowedRoles.includes(user.role)) {
+  //               router.push(`/${user.role}/dashboard`);
+  //           } else {
+  //               setIsAuthorized(true);
+  //           }
+  //       }
+  //   }, 200);
+  //   return () => clearTimeout(timer);
+  // }, [isAuthenticated, user, router, allowedRoles]);
 
   if (!isAuthorized) {
     return (
@@ -158,6 +158,12 @@ export default function AdminLayout({
     );
   }
 
+  const handleLogout = () => {
+    // Manually clear token and redirect since we are bypassing auth context's logout
+    localStorage.removeItem('proctorlock_token');
+    router.push('/');
+  };
+
   return (
     <SidebarProvider>
         <AdminSidebar onLogoutClick={() => setIsLogoutDialogOpen(true)} />
@@ -169,7 +175,40 @@ export default function AdminLayout({
         <LogoutConfirmationDialog
             open={isLogoutDialogOpen}
             onOpenChange={setIsLogoutDialogOpen}
+            onConfirm={handleLogout}
         />
     </SidebarProvider>
+  );
+}
+
+// Update LogoutConfirmationDialog to accept a custom onConfirm handler
+function LogoutConfirmationDialog({
+  open,
+  onOpenChange,
+  onConfirm
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+             <LogOut className="h-5 w-5" /> Are you sure you want to log out?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            You will be returned to the login page.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>
+            Log Out
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
