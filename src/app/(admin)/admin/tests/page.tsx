@@ -40,6 +40,7 @@ import {
 import { TestDetailsCard } from '@/components/examiner/test-details-card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
 type TestStatus = 'Active' | 'Finished' | 'Draft';
 type ApprovalStatus = 'Approved' | 'Pending' | 'Rejected';
@@ -113,6 +114,15 @@ export default function TestsPage() {
             )
         );
     };
+    
+    const handleApprovalToggle = (test: Test, approved: boolean) => {
+        if (approved) {
+            handleApprovalChange(test.id, 'Approved');
+        } else {
+            setRejectingTest(test);
+        }
+    };
+
 
     const handleRejectConfirm = () => {
         if (rejectingTest) {
@@ -197,27 +207,20 @@ export default function TestsPage() {
             const status = row.getValue('approval') as Test['approval'];
             if (status === 'Pending') {
                 return (
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleApprovalChange(row.original.id, 'Approved')}>
-                           <ThumbsUp className="h-4 w-4 mr-2"/> Approve
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => setRejectingTest(row.original)}>
-                           <ThumbsDown className="h-4 w-4 mr-2"/> Reject
-                        </Button>
-                    </div>
+                    <Switch
+                        checked={false}
+                        onCheckedChange={(checked) => handleApprovalToggle(row.original, checked)}
+                        aria-label="Approval toggle"
+                    />
                 )
             }
             return (
-                <Badge
-                    variant={status === 'Approved' ? 'default' : 'destructive'}
-                    className={
-                      status === 'Approved' ? 'bg-foreground text-background' 
-                      : status === 'Rejected' ? 'bg-destructive text-destructive-foreground'
-                      : 'bg-muted text-muted-foreground'
-                    }
-                >
-                    {status}
-                </Badge>
+                 <Switch
+                    checked={status === 'Approved'}
+                    onCheckedChange={(checked) => handleApprovalToggle(row.original, checked)}
+                    aria-label="Approval toggle"
+                    disabled={status !== 'Pending'}
+                />
             );
         },
       },
@@ -556,7 +559,7 @@ export default function TestsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     {viewingTest && (
-                       <div className="max-h-[70vh] overflow-y-auto p-1">
+                       <div className="max-h-[70vh] overflow-y-auto p-1 no-scrollbar">
                             <TestDetailsCard test={viewingTest} />
                        </div>
                     )}
