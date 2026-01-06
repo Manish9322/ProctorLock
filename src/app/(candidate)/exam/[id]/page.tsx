@@ -26,7 +26,8 @@ export default function ExamPage() {
     if (searchParams.get('submitted') === 'true') {
         const savedState = localStorage.getItem(`examState-${examId}`);
         if (savedState) {
-            const { answers, totalQuestions } = JSON.parse(savedState);
+            const { answers, questions } = JSON.parse(savedState);
+            const totalQuestions = questions?.length || 10;
             const details: SubmissionDetails = {
                 totalQuestions: totalQuestions,
                 attempted: Object.keys(answers).length,

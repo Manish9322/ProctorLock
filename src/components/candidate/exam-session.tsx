@@ -72,30 +72,58 @@ const mockQuestions: Question[] = [
 
 const EXAM_DURATION_SECONDS = 60 * 60; // 60 minutes
 
-const useExamState = (examId: string) => {
-    const getInitialState = <T>(key: string, defaultValue: T): T => {
-        if (typeof window === 'undefined') return defaultValue;
-        const saved = localStorage.getItem(`examState-${examId}-${key}`);
-        return saved ? JSON.parse(saved) : defaultValue;
+const useExamState = (examId: string, questions: Question[]) => {
+    const getInitialState = useCallback(() => {
+        if (typeof window === 'undefined') {
+            return {
+                answers: {},
+                markedForReview: {},
+                timeLeft: EXAM_DURATION_SECONDS,
+            };
+        }
+        const saved = localStorage.getItem(`examState-${examId}`);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Ensure questions are part of the state for consistency
+            parsed.questions = questions;
+            return parsed;
+        }
+        return {
+            answers: {},
+            markedForReview: {},
+            timeLeft: EXAM_DURATION_SECONDS,
+            questions: questions,
+        };
+    }, [examId, questions]);
+
+    const [state, setState] = useState(getInitialState);
+
+    useEffect(() => {
+        localStorage.setItem(`examState-${examId}`, JSON.stringify(state));
+    }, [state, examId]);
+    
+    const setTimeLeft = (newTimeLeft: number | ((prevTime: number) => number)) => {
+        setState(prevState => {
+            const time = typeof newTimeLeft === 'function' ? newTimeLeft(prevState.timeLeft) : newTimeLeft;
+            return { ...prevState, timeLeft: time };
+        });
     };
 
-    const [answers, setAnswers] = useState<{ [key: string]: string }>(() => getInitialState('answers', {}));
-    const [markedForReview, setMarkedForReview] = useState<{ [key: string]: boolean }>(() => getInitialState('markedForReview', {}));
-    const [timeLeft, setTimeLeft] = useState<number>(() => getInitialState('timeLeft', EXAM_DURATION_SECONDS));
-
-    useEffect(() => {
-        localStorage.setItem(`examState-${examId}-answers`, JSON.stringify(answers));
-    }, [answers, examId]);
-
-    useEffect(() => {
-        localStorage.setItem(`examState-${examId}-markedForReview`, JSON.stringify(markedForReview));
-    }, [markedForReview, examId]);
+    const setAnswers = (newAnswers: any | ((prevAnswers: any) => any)) => {
+        setState(prevState => ({
+            ...prevState,
+            answers: typeof newAnswers === 'function' ? newAnswers(prevState.answers) : newAnswers,
+        }));
+    };
     
-    useEffect(() => {
-        localStorage.setItem(`examState-${examId}-timeLeft`, JSON.stringify(timeLeft));
-    }, [timeLeft, examId]);
+    const setMarkedForReview = (newMarks: any | ((prevMarks: any) => any)) => {
+        setState(prevState => ({
+            ...prevState,
+            markedForReview: typeof newMarks === 'function' ? newMarks(prevState.markedForReview) : newMarks,
+        }));
+    };
 
-    return { answers, setAnswers, markedForReview, setMarkedForReview, timeLeft, setTimeLeft };
+    return { ...state, setAnswers, setMarkedForReview, setTimeLeft };
 };
 
 
@@ -147,8 +175,6 @@ const QuestionNavigator = ({
     return 'unanswered';
   };
 
-  const unansweredQuestionsCount = questions.length - Object.keys(answers).length;
-
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -158,6 +184,22 @@ const QuestionNavigator = ({
         <div className="grid grid-cols-5 gap-2">
           {questions.map((q, index) => {
             const status = getStatus(index);
+            let statusStyles = "";
+            switch (status) {
+                case 'answered':
+                    statusStyles = "bg-foreground text-background";
+                    break;
+                case 'review':
+                     statusStyles = "border-2 border-foreground";
+                    break;
+                case 'answered_review':
+                    statusStyles = "bg-foreground text-background border-2 border-background ring-1 ring-foreground";
+                    break;
+                case 'unanswered':
+                default:
+                    statusStyles = "bg-muted/50";
+            }
+
             return (
                <TooltipProvider key={q.id} delayDuration={0}>
                     <Tooltip>
@@ -167,10 +209,7 @@ const QuestionNavigator = ({
                                 className={cn(
                                     "flex h-10 w-10 items-center justify-center rounded-md border text-sm font-medium transition-all",
                                     index === currentQuestionIndex && "ring-2 ring-primary ring-offset-2",
-                                    status === 'answered' && "bg-foreground text-background",
-                                    status === 'review' && "border-2 border-foreground",
-                                    status === 'answered_review' && "bg-foreground text-background border-2 border-background ring-1 ring-foreground",
-                                    status === 'unanswered' && "bg-muted/50"
+                                    statusStyles
                                 )}
                             >
                                 {index + 1}
@@ -197,80 +236,6 @@ const QuestionNavigator = ({
   );
 };
 
-
-const ConfirmationDialog = ({
-    open,
-    onOpenChange,
-    onConfirm,
-    unansweredCount,
-    isSubmitting,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onConfirm: () => void;
-    unansweredCount: number;
-    isSubmitting: boolean;
-}) => {
-    if (typeof document === 'undefined') return null;
-
-    return createPortal(
-         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Submission</AlertDialogTitle>
-                <AlertDialogDescription>
-                    You are about to end your exam. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-                {unansweredCount > 0 && (
-                     <div className="rounded-md border-l-4 border-destructive bg-destructive/10 p-4">
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <h4 className="font-bold text-destructive">You have unanswered questions!</h4>
-                                <p className="text-sm text-muted-foreground">
-                                    You have <span className="font-bold">{unansweredCount} unanswered question{unansweredCount > 1 ? 's' : ''}</span>. Are you sure you want to submit?
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-               <div className="rounded-md border divide-y">
-                     <div className="flex justify-between items-center p-3">
-                        <div className="flex items-center gap-3">
-                            <FileQuestion className="h-5 w-5 text-muted-foreground"/>
-                            <span className="font-medium">Total Questions</span>
-                        </div>
-                        <span className="font-bold text-lg">{mockQuestions.length}</span>
-                    </div>
-                     <div className="flex justify-between items-center p-3">
-                        <div className="flex items-center gap-3">
-                             <CheckSquare className="h-5 w-5 text-muted-foreground"/>
-                            <span className="font-medium">Answered</span>
-                        </div>
-                        <span className="font-semibold text-lg">{mockQuestions.length - unansweredCount}</span>
-                    </div>
-                     <div className="flex justify-between items-center p-3">
-                        <div className="flex items-center gap-3">
-                            <HelpCircle className="h-5 w-5 text-muted-foreground"/>
-                            <span className="font-medium">Unanswered</span>
-                        </div>
-                        <span className="font-semibold text-lg">{unansweredCount}</span>
-                    </div>
-                </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSubmitting}>Return to Exam</AlertDialogCancel>
-                <AlertDialogAction onClick={onConfirm} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
-                  {isSubmitting ? "Submitting..." : "Yes, Submit Now"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>,
-        document.body
-    );
-};
-
-
 export const ExamSession = ({
   examId,
   onTerminate,
@@ -286,30 +251,13 @@ export const ExamSession = ({
   const [questions] = useState<Question[]>(mockQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  const { answers, setAnswers, markedForReview, setMarkedForReview, timeLeft, setTimeLeft } = useExamState(examId);
-
-  const [isSubmitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { answers, setAnswers, markedForReview, setMarkedForReview, timeLeft, setTimeLeft } = useExamState(examId, questions);
+  
   const handleFinalSubmit = useCallback(async () => {
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-    
-    const details: SubmissionDetails = {
-        totalQuestions: questions.length,
-        attempted: Object.keys(answers).length,
-        unattempted: questions.length - Object.keys(answers).length,
-        submissionTime: new Date(),
-    };
-    
-    localStorage.removeItem(`examState-${examId}-answers`);
-    localStorage.removeItem(`examState-${examId}-markedForReview`);
-    localStorage.removeItem(`examState-${examId}-timeLeft`);
-
-    onSuccessfulSubmit(details);
-    setIsSubmitting(false);
-    setSubmitDialogOpen(false);
-  }, [questions, answers, onSuccessfulSubmit, examId]);
+    // This function will be called from the confirm page, not directly here.
+    // The onSuccessfulSubmit will be called from the parent page.
+    console.log("Final submission initiated from confirmation page.");
+  }, []);
   
   const terminateExam = useCallback((reason: string) => {
     onTerminate(reason);
@@ -353,38 +301,35 @@ export const ExamSession = ({
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      handleFinalSubmit();
       terminateExam("Time's up! Your exam has been automatically submitted.");
+      // The actual submission would happen on the server or confirm page after this.
+      router.push(`/exam/${examId}/confirm`);
       return;
     }
-    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    const timer = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, handleFinalSubmit, terminateExam, setTimeLeft]);
+  }, [timeLeft, terminateExam, setTimeLeft, examId, router]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
+    setAnswers((prev: any) => ({ ...prev, [questionId]: value }));
   };
   
   const handleMarkForReview = () => {
     const questionId = questions[currentQuestionIndex].id;
-    setMarkedForReview(prev => ({...prev, [questionId]: !prev[questionId]}));
+    setMarkedForReview((prev: any) => ({...prev, [questionId]: !prev[questionId]}));
   }
 
   const goToNext = () => setCurrentQuestionIndex(prev => Math.min(prev + 1, questions.length - 1));
   const goToPrevious = () => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
 
   const currentQuestion = questions[currentQuestionIndex];
-  const unansweredCount = questions.length - Object.keys(answers).length;
+
+  const handleSubmitClick = () => {
+      router.push(`/exam/${examId}/confirm`);
+  }
 
   return (
     <>
-      <ConfirmationDialog
-        open={isSubmitDialogOpen}
-        onOpenChange={setSubmitDialogOpen}
-        onConfirm={handleFinalSubmit}
-        unansweredCount={unansweredCount}
-        isSubmitting={isSubmitting}
-      />
       <div className="flex h-screen flex-col bg-muted/40">
           <header className="flex h-16 items-center justify-between border-b bg-background px-6 shrink-0">
               <h1 className="text-lg font-bold">Exam: {examId}</h1>
@@ -432,7 +377,7 @@ export const ExamSession = ({
                       answers={answers}
                       markedForReview={markedForReview}
                       onSelectQuestion={setCurrentQuestionIndex}
-                      onSubmitClick={() => setSubmitDialogOpen(true)}
+                      onSubmitClick={handleSubmitClick}
                   />
               </div>
           </main>
