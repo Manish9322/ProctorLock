@@ -14,9 +14,9 @@ import {
   AlertDialogCancel
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, LogOut, ChevronLeft, ChevronRight, Bookmark, CheckSquare, Square } from 'lucide-react';
+import { AlertCircle, LogOut, ChevronLeft, ChevronRight, Bookmark, CheckSquare, Square, CheckCircle2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,13 @@ type Question = {
 };
 
 type QuestionStatus = 'unvisited' | 'answered' | 'unanswered' | 'review';
+
+type SubmissionDetails = {
+    totalQuestions: number;
+    attempted: number;
+    unattempted: number;
+    submissionTime: Date;
+}
 
 // Mock Data
 const mockQuestions: Question[] = [
@@ -159,6 +166,9 @@ export function ExamSession({ examId }: { examId: string }) {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [markedForReview, setMarkedForReview] = useState<{ [key: string]: boolean }>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetails | null>(null);
 
   const terminateExam = useCallback((reason: string) => {
     setTerminationReason(reason);
@@ -176,6 +186,7 @@ export function ExamSession({ examId }: { examId: string }) {
   
   // Proctoring Effects (focus, fullscreen, webcam, etc.)
   useEffect(() => {
+    if (isSubmitted) return;
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         addLog({ type: 'focus', event: 'Exited fullscreen' });
@@ -203,17 +214,18 @@ export function ExamSession({ examId }: { examId: string }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [addLog, terminateExam]);
+  }, [addLog, terminateExam, isSubmitted]);
 
   // Exam Timer Effect
   useEffect(() => {
+    if (isSubmitted || isTerminated) return;
     if (timeLeft <= 0) {
-      terminateExam("Time's up! Your exam has been automatically submitted.");
+      handleConfirmSubmit("Time's up! Your exam has been automatically submitted.");
       return;
     }
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, terminateExam]);
+  }, [timeLeft, isSubmitted, isTerminated]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -226,6 +238,28 @@ export function ExamSession({ examId }: { examId: string }) {
 
   const goToNext = () => setCurrentQuestionIndex(prev => Math.min(prev + 1, questions.length - 1));
   const goToPrevious = () => setCurrentQuestionIndex(prev => Math.max(prev - 1, 0));
+
+  const unansweredQuestions = questions.length - Object.keys(answers).length;
+
+  const handleConfirmSubmit = async (reason: string) => {
+    setIsSubmitting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const details = {
+        totalQuestions: questions.length,
+        attempted: Object.keys(answers).length,
+        unattempted: unansweredQuestions,
+        submissionTime: new Date(),
+    };
+    setSubmissionDetails(details);
+    setIsSubmitted(true);
+    setIsSubmitting(false);
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  };
 
   if (isTerminated) {
     return (
@@ -248,6 +282,45 @@ export function ExamSession({ examId }: { examId: string }) {
     );
   }
 
+  if (isSubmitted && submissionDetails) {
+    return (
+        <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
+            <Card className="w-full max-w-2xl">
+                <CardHeader className="items-center text-center">
+                    <CheckCircle2 className="h-16 w-16 text-green-500 mb-2"/>
+                    <CardTitle className="text-2xl">Exam Submitted Successfully</CardTitle>
+                    <CardDescription>Your responses have been recorded.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="rounded-md border divide-y">
+                        <div className="flex justify-between p-3">
+                            <span className="text-muted-foreground">Total Questions</span>
+                            <span className="font-medium">{submissionDetails.totalQuestions}</span>
+                        </div>
+                        <div className="flex justify-between p-3">
+                            <span className="text-muted-foreground">Attempted</span>
+                            <span className="font-medium">{submissionDetails.attempted}</span>
+                        </div>
+                         <div className="flex justify-between p-3">
+                            <span className="text-muted-foreground">Unattempted</span>
+                            <span className="font-medium">{submissionDetails.unattempted}</span>
+                        </div>
+                         <div className="flex justify-between p-3">
+                            <span className="text-muted-foreground">Submission Time</span>
+                            <span className="font-medium">{submissionDetails.submissionTime.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <p className="text-center text-sm text-muted-foreground">You may now close this window or return to your dashboard.</p>
+                </CardContent>
+                <CardFooter className="justify-center">
+                    <Button onClick={() => (window.location.href = '/dashboard')}>Return to Dashboard</Button>
+                </CardFooter>
+            </Card>
+        </div>
+    )
+  }
+
+
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
@@ -258,20 +331,30 @@ export function ExamSession({ examId }: { examId: string }) {
           <TimeTracker timeLeft={timeLeft} duration={EXAM_DURATION_SECONDS} />
           <AlertDialog>
              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                    <LogOut className="mr-2 h-4 w-4" /> Submit Exam
+                <Button variant="destructive" size="sm" disabled={isSubmitting}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Exam'}
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You cannot make any changes after submitting. Any unanswered questions will be marked as incorrect.
+                        You cannot make any changes after submitting.
+                        {unansweredQuestions > 0 && (
+                            <span className="font-semibold block mt-2">
+                                You have {unansweredQuestions} unanswered question{unansweredQuestions > 1 ? 's' : ''}.
+                            </span>
+                        )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => terminateExam('You have successfully submitted your exam.')}>Submit</AlertDialogAction>
+                    <AlertDialogAction 
+                        onClick={() => handleConfirmSubmit('You have successfully submitted your exam.')} 
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Please wait...' : 'Yes, Submit Now'}
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -327,5 +410,3 @@ export function ExamSession({ examId }: { examId: string }) {
     </div>
   );
 }
-
-    
