@@ -32,6 +32,8 @@ export default function ExamPage() {
   const [isSubmitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [unansweredQuestionsCount, setUnansweredQuestionsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const examSessionRef = useRef<{ handleFinalSubmit: () => Promise<void> }>(null);
 
   const handleStartExam = async () => {
     setError(null);
@@ -50,37 +52,39 @@ export default function ExamPage() {
     setTerminationReason(reason);
     setIsTerminated(true);
     setIsExamStarted(false);
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
   }, []);
 
   const handleSuccessfulSubmit = useCallback((details: SubmissionDetails) => {
     setSubmissionDetails(details);
     setIsSubmitted(true);
     setIsExamStarted(false);
+     if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
   }, []);
 
   const handleConfirmSubmit = async () => {
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-
-    handleSuccessfulSubmit({
-        totalQuestions: 10, // This would come from a real data source
-        attempted: 10 - unansweredQuestionsCount,
-        unattempted: unansweredQuestionsCount,
-        submissionTime: new Date(),
-    });
-
-    setIsSubmitting(false);
-    setSubmitDialogOpen(false);
+    if (examSessionRef.current) {
+        setIsSubmitting(true);
+        await examSessionRef.current.handleFinalSubmit();
+        setIsSubmitting(false);
+        setSubmitDialogOpen(false);
+    }
   };
   
   const renderContent = () => {
     if (isExamStarted) {
       return (
         <ExamSession
+          ref={examSessionRef}
           examId={examId}
           onTerminate={handleTermination}
           onSuccessfulSubmit={handleSuccessfulSubmit}
           setUnansweredQuestionsCount={setUnansweredQuestionsCount}
+          setSubmitDialogOpen={setSubmitDialogOpen}
         />
       );
     }
@@ -88,15 +92,15 @@ export default function ExamPage() {
     if (isTerminated) {
       return (
         <div className="flex h-screen items-center justify-center bg-muted/40 p-4">
-            <Card className="w-full max-w-lg">
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-6 w-6 text-destructive" />
-                    {terminationReason.includes("Time's up") ? "Time's Up" : "Exam Terminated"}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>{terminationReason}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <CardFooter className="pt-6">
+            <Card className="w-full max-w-lg text-center">
+                <CardHeader className="items-center">
+                    <AlertCircle className="h-12 w-12 text-destructive mb-2" />
+                    <CardTitle className="text-2xl">
+                        {terminationReason.includes("Time's up") ? "Time's Up" : "Exam Terminated"}
+                    </CardTitle>
+                    <CardDescription>{terminationReason}</CardDescription>
+                </CardHeader>
+                <CardFooter>
                     <Button className="w-full" onClick={() => (window.location.href = '/dashboard')}>
                         Return to Dashboard
                     </Button>
