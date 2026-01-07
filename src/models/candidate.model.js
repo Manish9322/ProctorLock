@@ -40,7 +40,6 @@ const candidateSchema = new mongoose.Schema({
     approvalStatus: {
         type: String,
         enum: ['Approved', 'Pending', 'Rejected'],
-        default: 'Approved',
     },
     rejectionReason: {
         type: String,
@@ -55,8 +54,12 @@ const candidateSchema = new mongoose.Schema({
 
 // Pre-save hook to set approval status based on role
 candidateSchema.pre('save', function(next) {
-    if (this.role === 'examiner' && this.isNew) {
-        this.approvalStatus = 'Pending';
+    if (this.isNew) {
+        if (this.role === 'examiner') {
+            this.approvalStatus = 'Pending';
+        } else {
+            this.approvalStatus = 'Approved';
+        }
     }
     next();
 });
