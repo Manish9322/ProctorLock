@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import type { toast } from '@/hooks/use-toast';
 
-export type Role = 'student' | 'examiner' | 'admin' | 'professional' | null;
+export type Role = 'candidate' | 'examiner' | 'admin' | null;
 
 interface User {
     id: string;
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(decodedUser);
     
     // Redirect based on role
-    if (decodedUser.role === 'student' || decodedUser.role === 'professional') {
+    if (decodedUser.role === 'candidate') {
       router.push('/dashboard');
     } else if (decodedUser.role === 'examiner') {
       router.push('/examiner/dashboard');

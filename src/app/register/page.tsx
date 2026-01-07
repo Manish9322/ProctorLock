@@ -34,7 +34,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useGetRolesQuery, useGetGovIdTypesQuery, useRegisterCandidateMutation, useGetCollegesQuery } from '@/services/api';
+import { useGetGovIdTypesQuery, useRegisterCandidateMutation, useGetCollegesQuery } from '@/services/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -45,7 +45,7 @@ const registrationSchema = z.object({
   confirmPassword: z.string().min(6, 'Password must be at least 6 characters.'),
   phoneNumber: z.string().min(10, 'Please enter a valid phone number.'),
   timezone: z.string().min(2, 'Timezone is required.'),
-  role: z.string().min(1, 'Please select a role.'),
+  role: z.string(), // Role will be set programmatically
   college: z.string().min(2, 'Organization name is required.'),
   govIdType: z.string().min(1, 'Please select an ID type.'),
   govIdNumber: z.string().min(4, 'ID number must be at least 4 characters.'),
@@ -63,7 +63,6 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // RTK Query Hooks
-  const { data: roles = [], isLoading: isLoadingRoles } = useGetRolesQuery({});
   const { data: idTypes = [], isLoading: isLoadingIdTypes } = useGetGovIdTypesQuery({});
   const { data: colleges = [], isLoading: isLoadingColleges } = useGetCollegesQuery({});
   const [registerCandidate, { isLoading: isRegistering }] = useRegisterCandidateMutation();
@@ -78,7 +77,7 @@ export default function RegisterPage() {
       confirmPassword: '',
       phoneNumber: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      role: '',
+      role: 'candidate', // Default role for test-takers
       college: '',
       govIdType: '',
       govIdNumber: '',
@@ -90,7 +89,7 @@ export default function RegisterPage() {
         await registerCandidate(data).unwrap();
         toast({
             title: 'Registration Successful',
-            description: 'Your account has been created. If you registered as an examiner, your account is pending approval.',
+            description: 'Your account has been created.',
         });
         router.push('/');
     } catch (err: any) {
@@ -115,9 +114,9 @@ export default function RegisterPage() {
       </div>
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Create an Account</CardTitle>
+          <CardTitle className="text-2xl">Create a Candidate Account</CardTitle>
           <CardDescription>
-            Register to get started with your secure online exams.
+            Register to get started with your secure online exams. To register as an Examiner or Admin, please contact support.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -248,37 +247,11 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                 <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      {isLoadingRoles ? <Skeleton className="h-10 w-full" /> : (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select your role" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {roles.map((role: any) => (
-                                <SelectItem key={role.value} value={role.value}>
-                                {role.label}
-                                </SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="college"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Organization / Institute</FormLabel>
                       {isLoadingColleges ? <Skeleton className="h-10 w-full" /> : (
                          <FormControl>
@@ -296,49 +269,47 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="govIdType"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>ID Type</FormLabel>
+                        {isLoadingIdTypes ? <Skeleton className="h-10 w-full" /> : (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="ID Type" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {idTypes.map((idType: any) => (
+                                    <SelectItem key={idType.value} value={idType.value}>
+                                    {idType.label}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="govIdNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>ID Number</FormLabel>
+                        <FormControl>
+                            <Input placeholder="ID Number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                      control={form.control}
-                      name="govIdType"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>ID Type</FormLabel>
-                          {isLoadingIdTypes ? <Skeleton className="h-10 w-full" /> : (
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="ID Type" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                  {idTypes.map((idType: any) => (
-                                      <SelectItem key={idType.value} value={idType.value}>
-                                      {idType.label}
-                                      </SelectItem>
-                                  ))}
-                                  </SelectContent>
-                              </Select>
-                          )}
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                      />
-                      <FormField
-                      control={form.control}
-                      name="govIdNumber"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>ID Number</FormLabel>
-                          <FormControl>
-                              <Input placeholder="ID Number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                      />
-                  </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={isRegistering}>

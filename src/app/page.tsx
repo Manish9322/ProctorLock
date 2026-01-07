@@ -154,8 +154,7 @@ export default function LoginPage() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="student">Candidate (Student)</SelectItem>
-                  <SelectItem value="professional">Candidate (Professional)</SelectItem>
+                  <SelectItem value="candidate">Candidate</SelectItem>
                   <SelectItem value="examiner">Examiner</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
