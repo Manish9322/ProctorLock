@@ -1,30 +1,44 @@
 import { MONGODB_URI } from "@/config/config";
 import mongoose from "mongoose";
 
-const _db = async () => {
-  try {
-    // Check if already connected
-    if (mongoose.connection.readyState >= 1) {
-      return;
-    }
+/**
+ * Global is used here to maintain a cached connection across hot reloads
+ * in development. This prevents connections from growing exponentially
+ * during API Route usage.
+ */
+let cached = global.mongoose;
 
-    // Validate MONGODB_URI
-    if (!MONGODB_URI) {
-      // Use process.env directly if config import fails
-      const mongoUri = process.env.MONGODB_URI;
-      if (!mongoUri) {
-         throw new Error("MONGODB_URI is not defined in environment variables");
-      }
-       await mongoose.connect(mongoUri);
-    } else {
-        await mongoose.connect(MONGODB_URI);
-    }
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
-    console.log("MongoDB connected successfully");
-  } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    throw error; // Don't exit process in Next.js API routes
+async function _db() {
+  if (cached.conn) {
+    return cached.conn;
   }
-};
+
+  if (!cached.promise) {
+    const mongoUri = MONGODB_URI || process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error(
+        "Please define the MONGODB_URI environment variable inside .env"
+      );
+    }
+    
+    cached.promise = mongoose.connect(mongoUri, { bufferCommands: false }).then((mongoose) => {
+        console.log("MongoDB connected successfully");
+        return mongoose;
+    });
+  }
+  
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
 
 export default _db;
