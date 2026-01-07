@@ -28,7 +28,7 @@ import { useCheckDbConnectionMutation } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
-  const [role, setRole] = useState<Role>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +67,8 @@ export default function LoginPage() {
   const handleRoleChange = (value: string) => {
     const newRole = value as Role;
     setRole(newRole);
+    setEmail('');
+    setPassword('');
   }
 
   const handleTestConnection = async () => {
@@ -152,7 +154,7 @@ export default function LoginPage() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="candidate">Candidate</SelectItem>
+                  <SelectItem value="student">Candidate</SelectItem>
                   <SelectItem value="examiner">Examiner</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>

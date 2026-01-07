@@ -51,7 +51,7 @@ export function DashboardLayout({
     );
   }
 
-  // This component is now only used for the candidate dashboard
+  // This component is now only used for the student dashboard
   // Admin and Examiner have their own layouts with sidebars
   return (
     <div className="flex min-h-screen w-full flex-col">

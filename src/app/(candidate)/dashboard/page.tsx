@@ -136,7 +136,7 @@ export default function CandidateDashboard() {
   }
 
   return (
-    <DashboardLayout allowedRoles={['candidate']}>
+    <DashboardLayout allowedRoles={['student']}>
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">My Exams</h1>
         <p className="text-muted-foreground">
