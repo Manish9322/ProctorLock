@@ -36,17 +36,22 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useGetRolesQuery, useGetGovIdTypesQuery, useRegisterCandidateMutation, useGetCollegesQuery } from '@/services/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Eye, EyeOff } from 'lucide-react';
 
 const registrationSchema = z.object({
   name: z.string().min(2, 'Full name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
+  confirmPassword: z.string().min(6, 'Password must be at least 6 characters.'),
   phoneNumber: z.string().min(10, 'Please enter a valid phone number.'),
   timezone: z.string().min(2, 'Timezone is required.'),
   role: z.string().min(1, 'Please select a role.'),
   college: z.string().min(2, 'Organization name is required.'),
   govIdType: z.string().min(1, 'Please select an ID type.'),
   govIdNumber: z.string().min(4, 'ID number must be at least 4 characters.'),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ['confirmPassword'],
 });
 
 type RegistrationFormValues = z.infer<typeof registrationSchema>;
@@ -54,6 +59,8 @@ type RegistrationFormValues = z.infer<typeof registrationSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // RTK Query Hooks
   const { data: roles = [], isLoading: isLoadingRoles } = useGetRolesQuery({});
@@ -68,6 +75,7 @@ export default function RegisterPage() {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
       phoneNumber: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       role: '',
@@ -152,16 +160,59 @@ export default function RegisterPage() {
                         <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
+                          <div className="relative">
                             <Input
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
                             {...field}
                             />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <span className="sr-only">Toggle password visibility</span>
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
+                <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                              <Input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
+                              {...field}
+                              />
+                               <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                >
+                                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  <span className="sr-only">Toggle password visibility</span>
+                                </Button>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+              </div>
+               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="phoneNumber"
@@ -179,8 +230,6 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-              </div>
-               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                  <FormField
                   control={form.control}
                   name="timezone"
@@ -194,6 +243,8 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                  <FormField
                   control={form.control}
                   name="role"
@@ -220,8 +271,6 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="college"
@@ -242,47 +291,49 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                    control={form.control}
-                    name="govIdType"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>ID Type</FormLabel>
-                        {isLoadingIdTypes ? <Skeleton className="h-10 w-full" /> : (
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="ID Type" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                {idTypes.map((idType: any) => (
-                                    <SelectItem key={idType.value} value={idType.value}>
-                                    {idType.label}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="govIdNumber"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>ID Number</FormLabel>
-                        <FormControl>
-                            <Input placeholder="ID Number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
                 </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                      control={form.control}
+                      name="govIdType"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>ID Type</FormLabel>
+                          {isLoadingIdTypes ? <Skeleton className="h-10 w-full" /> : (
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="ID Type" />
+                                  </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                  {idTypes.map((idType: any) => (
+                                      <SelectItem key={idType.value} value={idType.value}>
+                                      {idType.label}
+                                      </SelectItem>
+                                  ))}
+                                  </SelectContent>
+                              </Select>
+                          )}
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={form.control}
+                      name="govIdNumber"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>ID Number</FormLabel>
+                          <FormControl>
+                              <Input placeholder="ID Number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                  </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={isRegistering}>
