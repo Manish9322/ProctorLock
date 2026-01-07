@@ -13,45 +13,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { BookOpenCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
+import { useGetAssignmentsForCandidateQuery } from '@/services/api';
+import type { Test } from '@/app/(admin)/admin/tests/page';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ExamStatus = 'Upcoming' | 'Live' | 'Completed' | 'Missed';
 
-const examsData = [
-  {
-    _id: '66a4f971e4f3a7a9a1e0b234', // Example MongoDB ObjectId
-    id: 'CS101-FINAL',
-    title: 'Introduction to Computer Science - Final Exam',
-    status: 'Upcoming' as ExamStatus,
-    scheduledDateTime: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // 2 hours from now
-    duration: '60 minutes',
-  },
-  {
-    _id: '66a4f971e4f3a7a9a1e0b235',
-    id: 'MA203-MIDTERM',
-    title: 'Calculus II - Midterm',
-    status: 'Live' as ExamStatus,
-    scheduledDateTime: new Date(),
-    duration: '90 minutes',
-  },
-  {
-    _id: '66a4f971e4f3a7a9a1e0b236',
-    id: 'PHY201-QUIZ3',
-    title: 'University Physics I - Quiz 3',
-    status: 'Completed' as ExamStatus,
-    scheduledDateTime: new Date('2024-07-20T10:00:00'),
-    duration: '30 minutes',
-  },
-  {
-    _id: '66a4f971e4f3a7a9a1e0b237',
-    id: 'CHEM101-LAB',
-    title: 'Chemistry Lab Practical',
-    status: 'Missed' as ExamStatus,
-    scheduledDateTime: new Date('2024-07-19T14:00:00'),
-    duration: '45 minutes',
-  },
-];
+interface AssignedExam {
+  _id: string;
+  test: Test;
+  status: string; // This is the assignment status, e.g. "Assigned", "Completed"
+}
 
 const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   const calculateTimeLeft = () => {
@@ -102,6 +77,11 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
 
 
 export default function CandidateDashboard() {
+  const { user } = useAuth();
+  const { data: assignments = [], isLoading, isError } = useGetAssignmentsForCandidateQuery(user?.id, {
+    skip: !user?.id,
+  });
+
   const [isClient, setIsClient] = useState(false);
   const [highlightedExam, setHighlightedExam] = useState<string | null>(null);
 
@@ -111,13 +91,43 @@ export default function CandidateDashboard() {
     if (enrolledTestId) {
         setHighlightedExam(enrolledTestId);
         // Optional: scroll to the highlighted exam
-        const element = document.getElementById(`exam-${enrolledTestId}`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        localStorage.removeItem('proctorlock_test_enroll');
+        setTimeout(() => {
+            const element = document.getElementById(`exam-${enrolledTestId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            localStorage.removeItem('proctorlock_test_enroll');
+        }, 100);
     }
   }, []);
+  
+  const getExamStatus = (test: Test): ExamStatus => {
+    if (!isClient) return 'Upcoming'; // Default status on server
+    
+    const now = new Date();
+    const startTime = new Date(`${test.scheduling.date}T${test.scheduling.startTime}`);
+    const endTime = new Date(`${test.scheduling.date}T${test.scheduling.endTime}`);
+    
+    if (now > endTime) return 'Completed';
+    if (now >= startTime && now <= endTime) return 'Live';
+    return 'Upcoming';
+  };
+  
+  const examsData = useMemo(() => {
+    if (!assignments) return [];
+    return assignments
+      .filter((assignment: AssignedExam) => assignment.test) // Filter out assignments with no test data
+      .map((assignment: AssignedExam) => {
+        const status = getExamStatus(assignment.test);
+        return {
+          ...assignment,
+          test: {
+            ...assignment.test,
+            dynamicStatus: status,
+          }
+        };
+      });
+  }, [assignments, isClient]);
 
   const getStatusBadgeVariant = (status: ExamStatus) => {
     switch (status) {
@@ -129,7 +139,8 @@ export default function CandidateDashboard() {
     }
   }
 
-  const isExamNear = (date: Date) => {
+  const isExamNear = (dateStr: string, timeStr: string) => {
+    const date = new Date(`${dateStr}T${timeStr}`);
     const now = new Date();
     const diff = +date - +now;
     return diff > 0 && diff < 24 * 60 * 60 * 1000; // Less than 24 hours away
@@ -144,48 +155,86 @@ export default function CandidateDashboard() {
         </p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pt-4">
-        {examsData.map((exam) => (
-          <Card
-            key={exam._id}
-            id={`exam-${exam._id}`}
-            className={cn(
-                "flex flex-col transition-all",
-                highlightedExam === exam._id && "ring-2 ring-primary ring-offset-2"
-            )}
-           >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-medium">
-                  {exam.title}
-                </CardTitle>
-                 <Badge variant={getStatusBadgeVariant(exam.status)}>{exam.status}</Badge>
-              </div>
-              <CardDescription>ID: {exam.id}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-               <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>{isClient && exam.scheduledDateTime.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="mr-2 h-4 w-4" />
-                <span>Duration: {exam.duration}</span>
-              </div>
-               {exam.status === 'Upcoming' && isClient && isExamNear(exam.scheduledDateTime) && (
-                <div className="pt-2">
-                    <CountdownTimer targetDate={exam.scheduledDateTime} />
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button asChild className="w-full" disabled={exam.status !== 'Live' && exam.status !== 'Upcoming'}>
-                <Link href={`/exam/${exam.id}/pre-check`}>
-                   {exam.status === 'Live' ? 'Join Now' : 'Proceed to Exam'}
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+             <Card key={i} className="flex flex-col">
+              <CardHeader>
+                <Skeleton className="h-5 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/4" />
+              </CardHeader>
+              <CardContent className="flex-grow space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+              <CardFooter>
+                 <Skeleton className="h-10 w-full" />
+              </CardFooter>
+            </Card>
+          ))
+        ) : isError ? (
+           <div className="lg:col-span-3">
+              <Card className="items-center text-center p-8">
+                 <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                 <h3 className="font-semibold">Failed to load exams</h3>
+                 <p className="text-muted-foreground text-sm">There was an error fetching your assignments. Please try again later.</p>
+              </Card>
+           </div>
+        ) : examsData.length === 0 ? (
+          <div className="lg:col-span-3">
+            <Card className="items-center text-center p-8">
+                <BookOpenCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold">No Exams Assigned</h3>
+                <p className="text-muted-foreground text-sm">You have not been assigned to any exams yet. Please check back later.</p>
+            </Card>
+          </div>
+        ) : (
+          examsData.map(({ _id, test }: { _id: string, test: Test & { dynamicStatus: ExamStatus } }) => {
+            const scheduledDateTime = isClient ? new Date(`${test.scheduling.date}T${test.scheduling.startTime}`) : new Date();
+
+            return (
+              <Card
+                key={_id}
+                id={`exam-${_id}`}
+                className={cn(
+                    "flex flex-col transition-all",
+                    highlightedExam === _id && "ring-2 ring-primary ring-offset-2"
+                )}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-medium leading-tight">
+                      {test.title}
+                    </CardTitle>
+                    <Badge variant={getStatusBadgeVariant(test.dynamicStatus)}>{test.dynamicStatus}</Badge>
+                  </div>
+                  <CardDescription>ID: {test._id}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>{isClient && scheduledDateTime.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="mr-2 h-4 w-4" />
+                    <span>Duration: {test.scheduling.duration} minutes</span>
+                  </div>
+                  {test.dynamicStatus === 'Upcoming' && isClient && isExamNear(test.scheduling.date, test.scheduling.startTime) && (
+                    <div className="pt-2">
+                        <CountdownTimer targetDate={scheduledDateTime} />
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <Button asChild className="w-full" disabled={test.dynamicStatus !== 'Live' && test.dynamicStatus !== 'Upcoming'}>
+                    <Link href={`/exam/${test._id}/pre-check`}>
+                      {test.dynamicStatus === 'Live' ? 'Join Now' : 'Proceed to Exam'}
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })
+        )}
       </div>
     </DashboardLayout>
   );

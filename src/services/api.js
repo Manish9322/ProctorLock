@@ -115,6 +115,13 @@ export const api = createApi({
         ? [...result.map(({_id}) => ({ type: 'Assignments', id: _id })), { type: 'Assignments', id: 'LIST' }]
         : [{ type: 'Assignments', id: 'LIST' }],
     }),
+    getAssignmentsForCandidate: builder.query({
+      query: (candidateId) => `assignments/candidate/${candidateId}`,
+      providesTags: (result = []) =>
+        result
+          ? [...result.map(({ _id }) => ({ type: 'Assignments', id: _id })), { type: 'Assignments', id: 'LIST' }]
+          : [{ type: 'Assignments', id: 'LIST' }],
+    }),
     assignCandidate: builder.mutation({
       query: ({ testId, candidateId }) => ({
         url: 'assignments',
@@ -217,6 +224,7 @@ export const {
     useDeleteCandidateMutation,
     useRegisterCandidateMutation,
     useGetAssignmentsForTestQuery,
+    useGetAssignmentsForCandidateQuery,
     useAssignCandidateMutation,
     useUnassignCandidateMutation,
     useGetRolesQuery,
