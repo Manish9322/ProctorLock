@@ -275,17 +275,19 @@ export default function RegisterPage() {
                   control={form.control}
                   name="college"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
+                    <FormItem>
                       <FormLabel>Organization / Institute</FormLabel>
                       {isLoadingColleges ? <Skeleton className="h-10 w-full" /> : (
-                        <Combobox
-                          options={collegeOptions}
-                          value={field.value}
-                          onChange={(value) => form.setValue('college', value)}
-                          placeholder="Select or search..."
-                          searchPlaceholder="Search colleges..."
-                          notFoundMessage="No college found."
-                        />
+                         <FormControl>
+                            <Combobox
+                              options={collegeOptions}
+                              value={field.value}
+                              onChange={(value) => form.setValue('college', value)}
+                              placeholder="Select or search..."
+                              searchPlaceholder="Search colleges..."
+                              notFoundMessage="No college found."
+                            />
+                        </FormControl>
                       )}
                       <FormMessage />
                     </FormItem>
