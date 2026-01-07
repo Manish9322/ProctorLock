@@ -51,7 +51,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await login(email, password, role);
+      await login(email, password, role, toast);
       // The login function in useAuth will handle redirection on success
     } catch (err: any) {
       toast({

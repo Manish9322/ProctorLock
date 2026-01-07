@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
+import type { toast } from '@/hooks/use-toast';
 
 export type Role = 'candidate' | 'examiner' | 'admin' | null;
 
@@ -22,7 +23,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: Role) => Promise<void>;
+  login: (email: string, password: string, role: Role, toast: typeof toast) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string, role: Role) => {
+  const login = useCallback(async (email: string, password: string, role: Role, toast: typeof toast) => {
     const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -72,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
         throw new Error(data.message || 'Login failed');
     }
+    
+    toast({
+        title: 'Login Successful',
+        description: 'You will be redirected shortly.',
+    });
 
     const { token } = data;
     localStorage.setItem('proctorlock_token', token);
