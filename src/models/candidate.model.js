@@ -66,3 +66,5 @@ candidateSchema.index({ email: 1 });
 const Candidate = mongoose.models.Candidate || mongoose.model("Candidate", candidateSchema);
 
 export default Candidate;
+
+    

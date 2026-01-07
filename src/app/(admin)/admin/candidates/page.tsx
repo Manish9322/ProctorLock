@@ -415,7 +415,7 @@ export default function CandidatesPage() {
     // Data for each tab
     const students = React.useMemo(() => filteredCandidates.filter(c => c.role === 'student'), [filteredCandidates]);
     const professionals = React.useMemo(() => filteredCandidates.filter(c => c.role === 'professional'), [filteredCandidates]);
-    const examiners = React.useMemo(() => filteredCandidates.filter(c => c.role === 'examinar'), [filteredCandidates]);
+    const examiners = React.useMemo(() => filteredCandidates.filter(c => c.role === 'examiner'), [filteredCandidates]);
     const admins = React.useMemo(() => filteredCandidates.filter(c => c.role === 'admin'), [filteredCandidates]);
     
     const handleOpenModal = (type: 'view' | 'result', candidate: Candidate) => {
@@ -748,4 +748,6 @@ export default function CandidatesPage() {
         </>
     );
 }
+    
+
     
