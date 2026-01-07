@@ -28,9 +28,9 @@ import { useCheckDbConnectionMutation } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
-  const [role, setRole] = useState<Role>('admin');
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('password');
+  const [role, setRole] = useState<Role>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
@@ -67,9 +67,6 @@ export default function LoginPage() {
   const handleRoleChange = (value: string) => {
     const newRole = value as Role;
     setRole(newRole);
-    if (newRole) {
-      setEmail(`${newRole}@example.com`);
-    }
   }
 
   const handleTestConnection = async () => {
@@ -146,7 +143,7 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={handleRoleChange} defaultValue="admin">
+              <Select onValueChange={handleRoleChange}>
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
@@ -159,7 +156,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !role}>
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-sm text-center text-muted-foreground">
@@ -174,5 +171,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
