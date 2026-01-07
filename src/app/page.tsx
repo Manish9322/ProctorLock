@@ -97,9 +97,12 @@ export default function LoginPage() {
           {isDbLoading ? 'Testing...' : 'Test DB Connection'}
         </Button>
       </div>
-      <div className="mb-8 flex items-center gap-2 text-2xl font-bold">
-        <Icons.Logo className="h-8 w-8 text-primary" />
-        <span>ProctorLock</span>
+       <div className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-2 text-2xl font-bold">
+            <Icons.Logo className="h-8 w-8 text-primary" />
+            <span>ProctorLock</span>
+        </div>
+        <p className="text-muted-foreground text-sm mt-1">Secure Online Examination Platform</p>
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
@@ -144,7 +147,7 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={handleRoleChange}>
+              <Select onValueChange={handleRoleChange} value={role ?? ''}>
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>

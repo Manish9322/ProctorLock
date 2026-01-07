@@ -106,9 +106,12 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="mb-8 flex items-center gap-2 text-2xl font-bold">
-        <Icons.Logo className="h-8 w-8 text-primary" />
-        <span>ProctorLock</span>
+      <div className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-2 text-2xl font-bold">
+            <Icons.Logo className="h-8 w-8 text-primary" />
+            <span>ProctorLock</span>
+        </div>
+        <p className="text-muted-foreground text-sm mt-1">Secure Online Examination Platform</p>
       </div>
       <Card className="w-full max-w-2xl">
         <CardHeader>
