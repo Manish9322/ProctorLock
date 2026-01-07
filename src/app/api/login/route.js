@@ -26,8 +26,8 @@ export async function POST(req) {
              return NextResponse.json({ message: `You are not registered as a(n) ${role}.` }, { status: 403 });
         }
 
-        // Check if user is approved (especially for 'examiner')
-        if (user.role === 'examiner') {
+        // Check if user is approved (especially for 'examinar')
+        if (user.role === 'examinar') {
             if (user.approvalStatus === 'Pending') {
                 return NextResponse.json({ message: 'Your account is pending approval by an administrator.' }, { status: 403 });
             }
