@@ -4,11 +4,12 @@ import Candidate from '@/models/candidate.model';
 import { NextResponse } from 'next/server';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { MONGODB_URI } from '@/config/config';
 
 export async function POST(req) {
+    // Ensure database connection is established before proceeding
+    await _db();
+
     try {
-        await _db();
         const { email, password, role } = await req.json();
 
         if (!email || !password || !role) {
@@ -63,5 +64,3 @@ export async function POST(req) {
         return NextResponse.json({ message: 'An internal server error occurred.', error: error.message }, { status: 500 });
     }
 }
-
-    
